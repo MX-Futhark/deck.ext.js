@@ -39,21 +39,6 @@ Slides can include elements which then can be animated using the Animator.
 		
 		
     })
-	
-    /* Update current slide number with each change event */
-    .bind('deck.change', function(e, from, to) {
-        var opts = $[deck]('getOptions');
-        var $slideTo = $[deck]('getSlide', to);
-        var $container = $[deck]('getContainer');
-	
-        /* Restart the animator in the slide */
-		console.log("Parcours de l'animator");
-        if( eval($slideTo.data('dahu-animator')) !== undefined ) {
-			console.log("Reset de l'animator");
-            eval($slideTo.data('dahu-animator')).restart();
-        }
-        console.log("Passage à la suivante");
-    })
     
 	.bind('deck.beforeChange', function(e, from, to) {
 		var $slide = $[deck]('getSlide', from);
