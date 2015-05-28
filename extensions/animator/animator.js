@@ -52,6 +52,10 @@ function Animator(target, animations) {
     this.restart = function() {
         init();
     }
+	
+	this.getCursor = function() {
+		return cursor;
+	}
 
     /*  
         Move to next animation.
@@ -59,18 +63,25 @@ function Animator(target, animations) {
     this.next = function() {
         if( cursor < anims.length ) {
             anim = animations[cursor++];
-            if( $.isArray(anim) ) {
-                $(anim).each( function() {
-                    this(target);
-                });
-            } else {
-                anim(target);
-            }
+            anim(target, false);
             $(document).trigger(events.progress, {'target':target, 'index':cursor-1});
         } else {
             $(document).trigger(events.completed, {'target':target});
         }
     }
+	
+	/*
+		Move to previous animation.
+		*/
+	this.prev = function() {
+		if( cursor > 0 ) {
+			anim = animations[--cursor];
+			anim(target, true);
+			$(document).trigger(events.progress, {'target':target, 'index':cursor-1});
+        } else {
+            $(document).trigger(events.completed, {'target':target});
+        }
+	}
    
     /*  
         Return true if animation is complete.
@@ -93,13 +104,7 @@ function Animator(target, animations) {
         cursor = 0;
         if( anims.length>0 ) {
             anim = animations[cursor++];
-            if( $.isArray(anim) ) {
-                $(anim).each( function() {
-                    this(target);
-                });
-            } else {
-                anim(target);
-            }
+            anim(target, false);
             
             $(document).trigger(events.initialize, {'target':target});   
         } else {
@@ -116,8 +121,12 @@ function Animator(target, animations) {
     */
 Animator.Appear = function(e, d) {
     d = d || 0;
-    return function() {
-		$(e).animate({opacity: 1}, d);
+    return function(t, reverse) {
+		if(reverse) {
+			$(e, t).animate({opacity: 0}, d);
+		} else {
+			$(e, t).animate({opacity: 1}, d);
+		}
     }
 }
 
@@ -129,8 +138,12 @@ Animator.Appear = function(e, d) {
     */
 Animator.Disappear = function(e, d) {
     d = d || 0;
-    return function() {
-		$(e).animate({opacity: 0}, d);
+    return function(t, reverse) {
+		if(reverse) {
+			$(e, t).animate({opacity: 1}, d);
+		} else {
+			$(e, t).animate({opacity: 0}, d);
+		}
     }
 }
 
@@ -141,13 +154,16 @@ Animator.Disappear = function(e, d) {
     tr  the transformation
     d   duration
     */
-Animator.Transform = function(e,tr,d) {
+Animator.Move = function(e,trX,trY,d) {
     d = d || 0;
-    return function(t) {
-        var $svg = $(t).svg('get');
-        $(e, $svg.root()).each( function(){
-            $(this).animate({'svgTransform': tr}, d);
-        })
+    return function(t, reverse) {
+		currentX = parseInt($(e).css("left"));
+		currentY = parseInt($(e).css("top"));
+		if(reverse) {
+			$(e, t).animate({left: currentX-trX, top: currentY-trY}, d);
+		} else {
+			$(e, t).animate({left: currentX+trX, top: currentY+trY}, d);
+		}
     }
 }
 
