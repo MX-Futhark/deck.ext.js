@@ -49,15 +49,22 @@ Slides can include elements which then can be animated using the Animator.
 		 */
 		var animator = eval($slide.data('dahu-animator'));
 		console.log("beforeChange : début");
-		console.log(animator)
-		if ( animator !== undefined && (! animator.isCompleted()) ) {
-			console.log("beforeChange : on ne passe pas !");
-			e.preventDefault();
-			if ( animator.cursor == 0 ) {
-				animator.restart();
-			} else {
-				animator.next();
-			} 
+		console.log(animator);
+		console.log(animator.getCursor());
+		if ( animator !== undefined ) {
+			if( from < to && (! animator.isCompleted()) ) {
+				console.log("beforeChange : on ne passe pas !");
+				e.preventDefault();
+				if ( animator.getCursor() == 0 ) {
+					animator.restart();
+				} else {
+					animator.next();
+				} 
+			} else if (from > to && animator.getCursor() !== 0) {
+				console.log("go back from cursor " + animator.getCursor());
+				e.preventDefault();
+				animator.prev();
+			}
 		}
 		console.log("beforeChange : fin");
 	});

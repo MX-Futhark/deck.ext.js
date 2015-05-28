@@ -52,6 +52,10 @@ function Animator(target, animations) {
     this.restart = function() {
         init();
     }
+	
+	this.getCursor = function() {
+		return cursor;
+	}
 
     /*  
         Move to next animation.
