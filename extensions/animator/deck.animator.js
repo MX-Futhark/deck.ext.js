@@ -49,8 +49,6 @@ Slides can include elements which then can be animated using the Animator.
 		 */
 		var animator = eval($slide.data('dahu-animator'));
 		console.log("beforeChange : début");
-		console.log(animator);
-		console.log(animator.getCursor());
 		if ( animator !== undefined ) {
 			if( from < to && (! animator.isCompleted()) ) {
 				console.log("beforeChange : on ne passe pas !");
