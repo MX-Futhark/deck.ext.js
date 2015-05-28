@@ -21,7 +21,7 @@
     <link rel="stylesheet" href="../../../deckjs/extensions/status/deck.status.css">
     <link rel="stylesheet" href="../../../deckjs/extensions/hash/deck.hash.css">
     <link rel="stylesheet" href="../../extensions/toc/deck.toc.css">
-    <link rel="stylesheet" href="../../extensions/asvg/deck.asvg.css">
+    <link rel="stylesheet" href="../../extensions/animator/deck.animator.css">
 
     <!-- Theme CSS files (menu swaps these out) -->
     <link rel="stylesheet" id="style-theme-link" href="../../themes/style/beamer.css">
@@ -37,7 +37,7 @@
     <!-- Jquery SVG -->
     <script type="text/javascript" src="../../libs/jquerysvg/jquery.svg.js"></script>
     <script type="text/javascript" src="../../libs/jquerysvg/jquery.svganim.js"></script>
-    <script type="text/javascript" src="../../extensions/asvg/animator.js"></script>
+    <script type="text/javascript" src="../../extensions/animator/animator.js"></script>
     <script type="text/javascript" src="../../../deckjs/modernizr.custom.js"></script>
     
 </head>
@@ -96,7 +96,7 @@
     </script>
 </section>
     
-<section class="slide">
+<section class="slide" data-dahu-animator="c2Anim" >
     <h2>Section 3</h2>
     <p>If you want to learn about making your own themes, extending deck.js, and more, check out the&nbsp;<a href="../docs/">documentation</a>.</p>
     <div class="centerbox">
@@ -104,19 +104,17 @@
           <param name="src" value="media/circle.svg" />
           <param name="width" value="100%" />
           <param name="height" value="400px" />
-          <param name="animator" value="c2Anim" />
           <param name="autoStart" value="0" />
         </object>
         <object class="deckjs-asvg-object half" id="canvas_3" type="image/svg+xml">
           <param name="src" value="media/circle.svg" />
           <param name="width" value="100%" />
           <param name="height" value="400px" />
-          <param name="animator" value="c3Anim" />
           <param name="autoStart" value="0" />
         </object>
     </div>
     <script type="text/javascript">
-        var c2Anim = new Animator("#canvas_2", [
+        var s6Anim = new Animator(".slide", [
             [Animator.Appear("#circleRed", 0),Animator.Appear("#circleGreen", 0),Animator.Appear("#circleBlue", 0)],
             Animator.Disappear("#circleRed", 0),
             Animator.Disappear("#circleBlue", 0)
@@ -191,7 +189,7 @@
 <script src="../../../deckjs/extensions/navigation/deck.navigation.js"></script>
 <script src="../../../deckjs/extensions/hash/deck.hash.js"></script>
 <script src="../../extensions/toc/deck.toc.js"></script>
-<script src="../../extensions/asvg/deck.asvg.js"></script>
+<script src="../../extensions/animator/deck.animator.js"></script>
 
 <!-- Specific to this page -->
 <script src="slides.js"></script>
