@@ -36,12 +36,12 @@ Slides can include svg documents which then can be animated using the Animator.
         $.each($[deck]('getSlides'), function(i, $el) {
             var $slide = $[deck]('getSlide',i);
             
-            if( $slide.has("object[type='deckjs/asvg']").length>0 ) {
+            if( $slide.has("object[class='deckjs-asvg-object']").length>0 ) {
                 $slide.data('animators', new Array());
             }
             
             /* Find all the object of type deckjs/asvg */
-            $slide.find("object[type='deckjs/asvg']").each(function(index) {
+            $slide.find("object[class='deckjs-asvg-object']").each(function(index) {
                 var id = $(this)
                 /* Load attributes and validate them */
                 var attributes = loadObjectParams(this);
