@@ -1,7 +1,8 @@
-/* 
- * To change this template, choose Tools | Templates
- * and open the template in the editor.
- */
+TriggerEnum = {
+	ONCLICK: "onClick",
+	WITHPREVIOUS: "withPrevious",
+	AFTERPREVIOUS: "afterPrevious"
+}
 
 function Animator(target, animations) {
     
@@ -60,7 +61,8 @@ function Animator(target, animations) {
 	this.startFromTheEnd = function() {
 		init();
 		animations.forEach( function(a){
-            a(target, false, true);
+			console.log("startFromEnd");
+            a.play(target, false, true);
 			cursor++;
         });
 	}
@@ -74,8 +76,14 @@ function Animator(target, animations) {
         */
     this.next = function() {
         if( cursor < anims.length ) {
-            anim = animations[cursor++];
-            anim(target, false, false);
+			do {
+				anim = animations[cursor++];
+				anim.play(target, false, false);
+				
+				if(cursor < anims.length && animations[cursor].trigger === TriggerEnum.ONCLICK) {
+					break;
+				}
+			} while(cursor < anims.length);
             $(document).trigger(events.progress, {'target':target, 'index':cursor-1});
         } else {
             $(document).trigger(events.completed, {'target':target});
@@ -87,8 +95,14 @@ function Animator(target, animations) {
 		*/
 	this.prev = function() {
 		if( cursor > 0 ) {
-			anim = animations[--cursor];
-			anim(target, true, false);
+			do {
+				anim = animations[--cursor];
+				anim.play(target, true, false);
+				
+				if(cursor > 0 && animations[cursor].trigger === TriggerEnum.ONCLICK) {
+					break;
+				}
+			} while(cursor > 0);
 			$(document).trigger(events.progress, {'target':target, 'index':cursor-1});
         } else {
             $(document).trigger(events.completed, {'target':target});
@@ -122,23 +136,54 @@ function Animator(target, animations) {
     }
 }
 
+callUsingTrigger = function(func, trigger, previousElt, nextElt, nextTrigger, container, reverse) {
+	if(reverse) {
+		if(nextTrigger === TriggerEnum.AFTERPREVIOUS && nextElt !== undefined) {
+			// wait until the previous (reverse) animation is done
+			$(nextElt, container).promise().done(function(){
+				func();
+			});
+		} else {
+			func();
+		}
+	} else {
+		if(trigger === TriggerEnum.AFTERPREVIOUS && previousElt !== undefined) {
+			// wait until the previous animation is done
+			$(previousElt, container).promise().done(function(){
+				func();
+			});
+		} else {
+			func();
+		}
+	}
+}
+
 /*
     Animator.Appear(e,d)
 
     e   element
     d   duration
+	previousElt   the id of the previous Elt
+	nextElt   the id of the next Elt
+	trig   the stirng representing the trigger of the event
     */
-Animator.Appear = function(e, d) {
+Animator.Appear = function(e, d, previousElt, nextElt, nextTrigger, trig) {
     d = d || 0;
-    return function(t, reverse, skip) {
-		duration = d;
-		if(skip) duration = 0;
-		if(reverse) {
-			$(e, t).animate({opacity: 0}, duration);
-		} else {
-			$(e, t).animate({opacity: 1}, duration);
+	return {
+		trigger: trig,
+		play: function(t, reverse, skip) {
+			duration = d;
+			if(skip) duration = 0;
+			this.appearance = function() {
+				if(reverse) {
+					$(e, t).animate({opacity: 0}, duration);
+				} else {
+					$(e, t).animate({opacity: 1}, duration);
+				}
+			};
+			callUsingTrigger(this.appearance, this.trigger, previousElt, nextElt, nextTrigger, t, reverse);
 		}
-    }
+	};
 }
 
 /*
@@ -146,18 +191,27 @@ Animator.Appear = function(e, d) {
 
     e   element
     d   duration
+	previousElt   the id of the previous Elt
+	nextElt   the id of the next Elt
+	trig   the stirng representing the trigger of the event
     */
-Animator.Disappear = function(e, d) {
+Animator.Disappear = function(e, d, previousElt, nextElt, nextTrigger, trig) {
     d = d || 0;
-    return function(t, reverse, skip) {
-		duration = d;
-		if(skip) duration = 0;
-		if(reverse) {
-			$(e, t).animate({opacity: 1}, duration);
-		} else {
-			$(e, t).animate({opacity: 0}, duration);
+    return {
+		trigger: trig,
+		play: function(t, reverse, skip) {
+			duration = d;
+			if(skip) duration = 0;
+			this.disappearance = function() {
+				if(reverse) {
+					$(e, t).animate({opacity: 1}, duration);
+				} else {
+					$(e, t).animate({opacity: 0}, duration);
+				}
+			};
+			callUsingTrigger(this.disappearance, this.trigger, previousElt, nextElt, nextTrigger, t, reverse);
 		}
-    }
+	};
 }
 
 /*
@@ -167,23 +221,32 @@ Animator.Disappear = function(e, d) {
     trX  the X translation
 	trY  the Y translation
     d   duration
+	previousElt   the id of the previous Elt
+	nextElt   the id of the next Elt
+	trig   the stirng representing the trigger of the event
     */
-Animator.Move = function(e,trX,trY,d) {
+Animator.Move = function(e,trX,trY,d,previousElt, nextElt, nextTrigger, trig) {
     d = d || 0;
-    return function(t, reverse, skip) {
-		duration = d;
-		if(skip) duration = 0;
-		// You have to wait for the animation to be finished to avoid using the wrong starting coordinates
-		$(e).promise().done(function(){
-			currentX = parseInt($(e).css("left"));
-			currentY = parseInt($(e).css("top"));
-			if(reverse) {
-				$(e).animate({left: currentX-trX, top: currentY-trY}, duration);
-			} else {
-				$(e).animate({left: currentX+trX, top: currentY+trY}, duration);
+    return {
+		trigger: trig,
+		play: function(t, reverse, skip) {
+			duration = d;
+			if(skip) duration = 0;
+			// You have to wait for the animation to be finished to avoid using the wrong starting coordinates
+			this.translation = function() {
+				$(e, t).promise().done(function(){
+					currentX = parseInt($(e).css("left"));
+					currentY = parseInt($(e).css("top"));
+					if(reverse) {
+						$(e, t).animate({left: currentX-trX, top: currentY-trY}, duration);
+					} else {
+						$(e, t).animate({left: currentX+trX, top: currentY+trY}, duration);
+					}
+				});
 			}
-		});
-    }
+			callUsingTrigger(this.translation, this.trigger, previousElt, nextElt, nextTrigger, t, reverse);
+		}
+	};
 }
 
 

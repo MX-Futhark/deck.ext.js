@@ -36,19 +36,44 @@ Slides can include elements which then can be animated using the Animator.
 		return $slide.data('slide-animator');
 	});
 	
-	$[deck]('extend', 'convertAnimatorJSON', function(animatorJSON) {
-		var animationsJSON = animatorJSON.actions;
-		animations = new Array();
-		animationsJSON.forEach( function(a){
-			if(a.type === "move") {
-				animations.push(Animator.Move(a.target, parseInt(a.trX), parseInt(a.trY), parseInt(a.duration)));
-			} else if (a.type === 'appear') {
-				animations.push(Animator.Appear(a.target, parseInt(a.duration)));
-			} else if (a.type === 'disappear') {
-				animations.push(Animator.Disappear(a.target, parseInt(a.duration)));
+	/*
+		Init all animators.
+		*/
+	$[deck]('extend', 'initAnimators', function() {
+		for(slideNb = 0; slideNb < $[deck]('getSlides').length; ++slideNb) {
+			var $slide = $[deck]('getSlide', slideNb);
+			var animatorJSON = eval($slide.data('dahu-animator'));
+			
+			if(!animatorJSON) continue;
+			var animationsJSON = animatorJSON.actions;
+			animations = new Array();
+			previousEltId = undefined;
+			nextEltId = undefined;
+			nextEltTrigger = undefined;
+			for(animInd = 0; animInd < animationsJSON.length; ++animInd) {
+				var a = animationsJSON[animInd];
+				var nextA = animationsJSON[animInd+1];
+				if(nextA !== undefined) {
+					nextEltId = nextA.target;
+					nextEltTrigger = nextA.trigger;
+				} else {
+					nextEltId = undefined;
+					nextEltTrigger = undefined;
+				}
+				if(a.type === "move") {
+					animations.push(Animator.Move(a.target, parseInt(a.trX), parseInt(a.trY), parseInt(a.duration), previousEltId, nextEltId, nextEltTrigger, a.trigger));
+				} else if (a.type === 'appear') {
+					animations.push(Animator.Appear(a.target, parseInt(a.duration), previousEltId, nextEltId, nextEltTrigger, a.trigger));
+				} else if (a.type === 'disappear') {
+					animations.push(Animator.Disappear(a.target, parseInt(a.duration), previousEltId, nextEltId, nextEltTrigger, a.trigger));
+				}
+				previousEltId = a.target;
 			}
-		});
-		return new Animator(animatorJSON.targetSlide, animations)
+			animationsJSON.forEach( function(a){
+
+			});
+			$slide.data('slide-animator', new Animator(animatorJSON.targetSlide, animations));
+		}
 	});
 	   
     /*
@@ -58,15 +83,8 @@ Slides can include elements which then can be animated using the Animator.
         var keys = $[deck].defaults.keys;
 		
 		// init all animators
-		for(slideNb = 0; slideNb < $[deck]('getSlides').length; ++slideNb) {
-			var $slide = $[deck]('getSlide', slideNb);
-			var animatorJSON = eval($slide.data('dahu-animator'));
-			
-			if(!animatorJSON) continue;
-			
-			$slide.data('slide-animator', $[deck]('convertAnimatorJSON', animatorJSON));
-		}
-        
+		$[deck]('initAnimators');
+		
         /* Bind key events */
         $d.unbind('keydown.deckanimator').bind('keydown.deckanimator', function(e) {
 			var currentIndex = $[deck]('getCurrentSlideIndex');
@@ -79,6 +97,11 @@ Slides can include elements which then can be animated using the Animator.
             }
 			hasChanged = false;
         });
+		
+		// if there is no anchor, deck.change isn't trigger and the page is loaded
+		if(!window.location.hash){
+			pageLoaded = true;
+		}
     })
     
 	.bind('deck.beforeChange', function(e, from, to) {
@@ -89,7 +112,7 @@ Slides can include elements which then can be animated using the Animator.
 		 * we keep on doing them and we don't go to the next slide.
 		 */
 		var animator = $[deck]('getAnimator', from);
-		if ( animator !== undefined ) {
+		if ( animator !== undefined && pageLoaded) {
 			if( (from === to-1 || (from === to && to === $[deck]('getSlides').length - 1)) && (! animator.isCompleted()) ) {
 				e.preventDefault();
 				if ( animator.getCursor() == 0 ) {
