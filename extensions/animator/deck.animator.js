@@ -35,6 +35,21 @@ Slides can include elements which then can be animated using the Animator.
 		var $slide = $[deck]('getSlide', slideNum);
 		return $slide.data('slide-animator');
 	});
+	
+	$[deck]('extend', 'convertAnimatorJSON', function(animatorJSON) {
+		var animationsJSON = animatorJSON.actions;
+		animations = new Array();
+		animationsJSON.forEach( function(a){
+			if(a.type === "move") {
+				animations.push(Animator.Move(a.target, parseInt(a.trX), parseInt(a.trY), parseInt(a.duration)));
+			} else if (a.type === 'appear') {
+				animations.push(Animator.Appear(a.target, parseInt(a.duration)));
+			} else if (a.type === 'disappear') {
+				animations.push(Animator.Disappear(a.target, parseInt(a.duration)));
+			}
+		});
+		return new Animator(animatorJSON.targetSlide, animations)
+	});
 	   
     /*
         jQuery.deck('Init')
@@ -49,18 +64,7 @@ Slides can include elements which then can be animated using the Animator.
 			
 			if(!animatorJSON) continue;
 			
-			var animationsJSON = animatorJSON.actions;
-			animations = new Array();
-			animationsJSON.forEach( function(a){
-				if(a.type === "move") {
-					animations.push(Animator.Move(a.target, parseInt(a.trX), parseInt(a.trY), parseInt(a.duration)));
-				} else if (a.type === 'appear') {
-					animations.push(Animator.Appear(a.target, parseInt(a.duration)));
-				} else if (a.type === 'disappear') {
-					animations.push(Animator.Disappear(a.target, parseInt(a.duration)));
-				}
-			});
-			$slide.data('slide-animator', new Animator(animatorJSON.targetSlide, animations));
+			$slide.data('slide-animator', $[deck]('convertAnimatorJSON', animatorJSON));
 		}
         
         /* Bind key events */
