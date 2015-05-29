@@ -51,7 +51,20 @@ function Animator(target, animations) {
         */
     this.restart = function() {
         init();
+		this.next();
     }
+	
+	/*
+		Start animator from the last state.
+		*/
+	this.startFromTheEnd = function() {
+		init();
+		animations.forEach( function(a){
+			console.log("skipping");
+            a(target, false, true);
+			cursor++;
+        });
+	}
 	
 	this.getCursor = function() {
 		return cursor;
@@ -63,7 +76,7 @@ function Animator(target, animations) {
     this.next = function() {
         if( cursor < anims.length ) {
             anim = animations[cursor++];
-            anim(target, false);
+            anim(target, false, false);
             $(document).trigger(events.progress, {'target':target, 'index':cursor-1});
         } else {
             $(document).trigger(events.completed, {'target':target});
@@ -76,7 +89,7 @@ function Animator(target, animations) {
 	this.prev = function() {
 		if( cursor > 0 ) {
 			anim = animations[--cursor];
-			anim(target, true);
+			anim(target, true, false);
 			$(document).trigger(events.progress, {'target':target, 'index':cursor-1});
         } else {
             $(document).trigger(events.completed, {'target':target});
@@ -98,16 +111,11 @@ function Animator(target, animations) {
     }
     
     function init() {           
-		console.log("Animator.init");
         $(document).trigger(events.beforeInitialize, {'target':target});
         
         cursor = 0;
-		console.log("anims.length = " + anims.length)
         if( anims.length>0 ) {
-			console.log("anim Start");
-            anim = animations[cursor++];
-            anim(target, false);
-            
+			anim = animations[cursor];
             $(document).trigger(events.initialize, {'target':target});   
         } else {
             throw "Animator requires at least one animation."
@@ -123,11 +131,13 @@ function Animator(target, animations) {
     */
 Animator.Appear = function(e, d) {
     d = d || 0;
-    return function(t, reverse) {
+    return function(t, reverse, skip) {
+		duration = d
+		if(skip) duration = 0;
 		if(reverse) {
-			$(e, t).animate({opacity: 0}, d);
+			$(e, t).animate({opacity: 0}, duration);
 		} else {
-			$(e, t).animate({opacity: 1}, d);
+			$(e, t).animate({opacity: 1}, duration);
 		}
     }
 }
@@ -140,33 +150,38 @@ Animator.Appear = function(e, d) {
     */
 Animator.Disappear = function(e, d) {
     d = d || 0;
-    return function(t, reverse) {
+    return function(t, reverse, skip) {
+		duration = d
+		if(skip) duration = 0;
 		if(reverse) {
-			$(e, t).animate({opacity: 1}, d);
+			$(e, t).animate({opacity: 1}, duration);
 		} else {
-			$(e, t).animate({opacity: 0}, d);
+			$(e, t).animate({opacity: 0}, duration);
 		}
     }
 }
 
 /*
-    Animator.Transform(e,tr,d)
+    Animator.Move(e,tr,d)
 
     e   element
-    tr  the transformation
+    trX  the X translation
+	trY  the Y translation
     d   duration
     */
 Animator.Move = function(e,trX,trY,d) {
     d = d || 0;
-    return function(t, reverse) {
+    return function(t, reverse, skip) {
+		duration = d
+		if(skip) duration = 0;
 		// You have to wait for the animation to be finished to avoid using the wrong starting coordinates
-		$(e, t).promise().done(function(){
+		$(e).promise().done(function(){
 			currentX = parseInt($(e).css("left"));
 			currentY = parseInt($(e).css("top"));
 			if(reverse) {
-				$(e, t).animate({left: currentX-trX, top: currentY-trY}, d);
+				$(e).animate({left: currentX-trX, top: currentY-trY}, duration);
 			} else {
-				$(e, t).animate({left: currentX+trX, top: currentY+trY}, d);
+				$(e).animate({left: currentX+trX, top: currentY+trY}, duration);
 			}
 		});
     }
