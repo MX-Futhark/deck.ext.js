@@ -60,7 +60,6 @@ function Animator(target, animations) {
 	this.startFromTheEnd = function() {
 		init();
 		animations.forEach( function(a){
-			console.log("skipping");
             a(target, false, true);
 			cursor++;
         });
