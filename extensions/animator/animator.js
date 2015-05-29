@@ -102,7 +102,9 @@ function Animator(target, animations) {
         $(document).trigger(events.beforeInitialize, {'target':target});
         
         cursor = 0;
+		console.log("anims.length = " + anims.length)
         if( anims.length>0 ) {
+			console.log("anim Start");
             anim = animations[cursor++];
             anim(target, false);
             
@@ -157,13 +159,16 @@ Animator.Disappear = function(e, d) {
 Animator.Move = function(e,trX,trY,d) {
     d = d || 0;
     return function(t, reverse) {
-		currentX = parseInt($(e).css("left"));
-		currentY = parseInt($(e).css("top"));
-		if(reverse) {
-			$(e, t).animate({left: currentX-trX, top: currentY-trY}, d);
-		} else {
-			$(e, t).animate({left: currentX+trX, top: currentY+trY}, d);
-		}
+		// You have to wait for the animation to be finished to avoid using the wrong starting coordinates
+		$(e, t).promise().done(function(){
+			currentX = parseInt($(e).css("left"));
+			currentY = parseInt($(e).css("top"));
+			if(reverse) {
+				$(e, t).animate({left: currentX-trX, top: currentY-trY}, d);
+			} else {
+				$(e, t).animate({left: currentX+trX, top: currentY+trY}, d);
+			}
+		});
     }
 }
 
