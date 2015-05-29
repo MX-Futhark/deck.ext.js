@@ -24,6 +24,11 @@ Slides can include elements which then can be animated using the Animator.
 		}
 		return -1;
     });
+	
+	$[deck]('extend', 'getAnimator', function(slideNum) {
+		var $slide = $[deck]('getSlide', slideNum);
+		return eval($slide.data('dahu-animator'));
+	});
 	   
     /*
         jQuery.deck('Init')
@@ -49,32 +54,33 @@ Slides can include elements which then can be animated using the Animator.
     
 	.bind('deck.beforeChange', function(e, from, to) {
 		hasChanged = false;
-		var $slide = $[deck]('getSlide', from);
+		
 		console.log('from = ' + from)
 		console.log('to = ' + to)
 		/*
 		 * If the animations of the current slide are not complete,
 		 * we keep on doing them and we don't go to the next slide.
 		 */
-		var animator = eval($slide.data('dahu-animator'));
-		console.log("beforeChange : début");
+		var animator = $[deck]('getAnimator', from);
 		if ( animator !== undefined ) {
-			console.log("animator detected");
-			if( (from < to || (from === to && to === $[deck]('getSlides').length - 1)) && (! animator.isCompleted()) ) {
-				console.log("beforeChange : on ne passe pas !");
+			var toAnimator = $[deck]('getAnimator', to);
+			// on the case the animation hasn't yet been initialized
+			// for example, when the presentation hasn't been loaded from the first slide
+			if(from > to && !toAnimator.isCompleted()) {
+				toAnimator.startFromTheEnd();
+			}
+			if( (from === to-1 || (from === to && to === $[deck]('getSlides').length - 1)) && (! animator.isCompleted()) ) {
 				e.preventDefault();
 				if ( animator.getCursor() == 0 ) {
 					animator.restart();
 				} else {
 					animator.next();
 				} 
-			} else if ((from > to || (from === to && to === 0)) && animator.getCursor() !== 0) {
-				console.log("go back from cursor " + animator.getCursor());
+			} else if ((from === to+1 || (from === to && to === 0)) && animator.getCursor() !== 0) {
 				e.preventDefault();
 				animator.prev();
 			}
 		}
-		console.log("beforeChange : fin");
 	})
 	
 	.bind('deck.change', function(e, from, to) {
