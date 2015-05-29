@@ -25,9 +25,37 @@ Slides can include elements which then can be animated using the Animator.
 		return -1;
     });
 	
+	/*
+		Returns the animator of the slide.
+		The object is created if it hasn't been done yet.
+		*/
 	$[deck]('extend', 'getAnimator', function(slideNum) {
 		var $slide = $[deck]('getSlide', slideNum);
-		return eval($slide.data('dahu-animator'));
+		
+		if($slide.data('slide-animator'))
+			return $slide.data('slide-animator');
+		
+		var animatorJSON = eval($slide.data('dahu-animator'));
+		
+		if(!animatorJSON)
+			return undefined;
+		
+		var animationsJSON = animatorJSON.actions;
+		animations = new Array();
+		animationsJSON.forEach( function(a){
+			console.log(a.type);
+            if(a.type === "move") {
+				animations.push(Animator.Move(a.target, parseInt(a.trX), parseInt(a.trY), parseInt(a.duration)));
+			} else if (a.type === 'appear') {
+				animations.push(Animator.Appear(a.target, parseInt(a.duration)));
+			} else if (a.type === 'disappear') {
+				animations.push(Animator.Disappear(a.target, parseInt(a.duration)));
+			}
+        });
+		console.log(animations);
+		console.log("target = " + animatorJSON.targetSlide);
+		$slide.data('slide-animator', new Animator(animatorJSON.targetSlide, animations));
+		return $slide.data('slide-animator');
 	});
 	   
     /*
@@ -62,11 +90,12 @@ Slides can include elements which then can be animated using the Animator.
 		 * we keep on doing them and we don't go to the next slide.
 		 */
 		var animator = $[deck]('getAnimator', from);
+		console.log(animator);
 		if ( animator !== undefined ) {
-			var toAnimator = $[deck]('getAnimator', to);
 			// on the case the animation hasn't yet been initialized
 			// for example, when the presentation hasn't been loaded from the first slide
-			if(from > to && !toAnimator.isCompleted()) {
+			var toAnimator = $[deck]('getAnimator', to);
+			if(toAnimator !== undefined && from > to && !toAnimator.isCompleted()) {
 				toAnimator.startFromTheEnd();
 			}
 			if( (from === to-1 || (from === to && to === $[deck]('getSlides').length - 1)) && (! animator.isCompleted()) ) {
