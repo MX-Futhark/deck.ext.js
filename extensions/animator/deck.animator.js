@@ -51,11 +51,11 @@ Slides can include elements which then can be animated using the Animator.
 			animations = new Array();
 			for(animInd = 0; animInd < animationsJSON.length; ++animInd) {
 				if(animationsJSON[animInd].type === "move") {
-					animations.push(Animator.Move(animInd, animationsJSON[animInd-1], animationsJSON[animInd], animationsJSON[animInd+1]));
+					animations.push(Animator.Move(animInd, animationsJSON[animInd]));
 				} else if (animationsJSON[animInd].type === 'appear') {
-					animations.push(Animator.Appear(animInd, animationsJSON[animInd-1], animationsJSON[animInd], animationsJSON[animInd+1]));
+					animations.push(Animator.Appear(animInd, animationsJSON[animInd]));
 				} else if (animationsJSON[animInd].type === 'disappear') {
-					animations.push(Animator.Disappear(animInd, animationsJSON[animInd-1], animationsJSON[animInd], animationsJSON[animInd+1]));
+					animations.push(Animator.Disappear(animInd, animationsJSON[animInd]));
 				}
 			}
 			$slide.data('slide-animator', new Animator(animatorJSON.target, animations));
@@ -104,11 +104,11 @@ Slides can include elements which then can be animated using the Animator.
 				if ( !animator.hasStarted() ) {
 					animator.restart();
 				} else {
-					animator.next();
+					animator.next(true);
 				} 
 			} else if ((from === to+1 || (from === to && to === 0)) && animator.hasStarted()) {
 				e.preventDefault();
-				animator.prev();
+				animator.prev(true);
 			}
 		}
 	})
