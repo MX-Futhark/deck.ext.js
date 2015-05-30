@@ -247,12 +247,11 @@ function Animator(target, animations) {
 /*
     Animator.Appear(prevA, a, nextA)
 
-	prevA   action JSON descriptor preceding the current one
+	ind   index of the action in the corresponding JSON animator array
     a   current action JSON descriptor
-    nextA   action JSON descriptor following the current one
     */
-Animator.Appear = function(ind, prevA, a, nextA) {
-	return generateChainedAnimation(ind, prevA, a, nextA, function(t, reverse, skip) {
+Animator.Appear = function(ind, a) {
+	return generateChainedAnimation(ind, a, function(t, reverse, skip) {
 		playRevertibleAnimation(a, t, 
 			{opacity: 1}, {opacity: 0}, 
 			reverse, skip);
@@ -262,12 +261,11 @@ Animator.Appear = function(ind, prevA, a, nextA) {
 /*
     Animator.Disappear(prevA, a, nextA)
 
-	prevA   action JSON descriptor preceding the current one
+	ind   index of the action in the corresponding JSON animator array
     a   current action JSON descriptor
-    nextA   action JSON descriptor following the current one
     */
-Animator.Disappear = function(ind, prevA, a, nextA) {
-	return generateChainedAnimation(ind, prevA, a, nextA, function(t, reverse, skip) {
+Animator.Disappear = function(ind, a) {
+	return generateChainedAnimation(ind,  a, function(t, reverse, skip) {
 		playRevertibleAnimation(a, t, 
 			{opacity: 0}, {opacity: 1}, 
 			reverse, skip);
@@ -277,12 +275,11 @@ Animator.Disappear = function(ind, prevA, a, nextA) {
 /*
     Animator.Move(prevA, a, nextA)
 
-	prevA   action JSON descriptor preceding the current one
+	ind   index of the action in the corresponding JSON animator array
     a   current action JSON descriptor
-    nextA   action JSON descriptor following the current one
     */
-Animator.Move = function(ind, prevA, a, nextA) {
-	return generateChainedAnimation(ind, prevA, a, nextA, function(t, reverse, skip) {
+Animator.Move = function(ind, a) {
+	return generateChainedAnimation(ind, a, function(t, reverse, skip) {
 		// One needs to wait for the animation to be finished to avoid using the wrong starting coordinates
 		$(a.target, t).promise().done(function(){
 			currentX = parseInt($(a.target).css("left"));
@@ -328,12 +325,10 @@ playRevertibleAnimation = function(a, t,
 	Generates an object containing information about the current animation, 
 	how to play it, and information about the next and previous animations.
 	*/
-generateChainedAnimation = function(ind, prevA, currentA, nextA, currentAnimFunc) {
+generateChainedAnimation = function(ind, currentA, currentAnimFunc) {
 	return {
 		index: ind,
 		action: currentA,
-		prevAction: prevA,
-		nextAction: nextA,
 		play: currentAnimFunc
 	};
 }
