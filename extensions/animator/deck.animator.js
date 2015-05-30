@@ -12,6 +12,8 @@ animation like in most presentation solution e.g powerpoint, keynote, etc.
 Slides can include elements which then can be animated using the Animator.
 */
 
+// TODO : refactor
+
 (function($, deck, undefined) {
     var $d = $(document);
 	// determines whether a actuel change in slide number has occured before the next action
@@ -49,11 +51,11 @@ Slides can include elements which then can be animated using the Animator.
 			animations = new Array();
 			for(animInd = 0; animInd < animationsJSON.length; ++animInd) {
 				if(animationsJSON[animInd].type === "move") {
-					animations.push(Animator.Move(animationsJSON[animInd-1], animationsJSON[animInd], animationsJSON[animInd+1]));
+					animations.push(Animator.Move(animInd, animationsJSON[animInd-1], animationsJSON[animInd], animationsJSON[animInd+1]));
 				} else if (animationsJSON[animInd].type === 'appear') {
-					animations.push(Animator.Appear(animationsJSON[animInd-1], animationsJSON[animInd], animationsJSON[animInd+1]));
+					animations.push(Animator.Appear(animInd, animationsJSON[animInd-1], animationsJSON[animInd], animationsJSON[animInd+1]));
 				} else if (animationsJSON[animInd].type === 'disappear') {
-					animations.push(Animator.Disappear(animationsJSON[animInd-1], animationsJSON[animInd], animationsJSON[animInd+1]));
+					animations.push(Animator.Disappear(animInd, animationsJSON[animInd-1], animationsJSON[animInd], animationsJSON[animInd+1]));
 				}
 			}
 			animationsJSON.forEach( function(a){
