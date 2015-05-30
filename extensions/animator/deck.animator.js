@@ -47,27 +47,14 @@ Slides can include elements which then can be animated using the Animator.
 			if(!animatorJSON) continue;
 			var animationsJSON = animatorJSON.actions;
 			animations = new Array();
-			previousEltId = undefined;
-			nextEltId = undefined;
-			nextEltTrigger = undefined;
 			for(animInd = 0; animInd < animationsJSON.length; ++animInd) {
-				var a = animationsJSON[animInd];
-				var nextA = animationsJSON[animInd+1];
-				if(nextA !== undefined) {
-					nextEltId = nextA.target;
-					nextEltTrigger = nextA.trigger;
-				} else {
-					nextEltId = undefined;
-					nextEltTrigger = undefined;
+				if(animationsJSON[animInd].type === "move") {
+					animations.push(Animator.Move(animationsJSON[animInd-1], animationsJSON[animInd], animationsJSON[animInd+1]));
+				} else if (animationsJSON[animInd].type === 'appear') {
+					animations.push(Animator.Appear(animationsJSON[animInd-1], animationsJSON[animInd], animationsJSON[animInd+1]));
+				} else if (animationsJSON[animInd].type === 'disappear') {
+					animations.push(Animator.Disappear(animationsJSON[animInd-1], animationsJSON[animInd], animationsJSON[animInd+1]));
 				}
-				if(a.type === "move") {
-					animations.push(Animator.Move(a.target, parseInt(a.trX), parseInt(a.trY), parseInt(a.duration), previousEltId, nextEltId, nextEltTrigger, a.trigger));
-				} else if (a.type === 'appear') {
-					animations.push(Animator.Appear(a.target, parseInt(a.duration), previousEltId, nextEltId, nextEltTrigger, a.trigger));
-				} else if (a.type === 'disappear') {
-					animations.push(Animator.Disappear(a.target, parseInt(a.duration), previousEltId, nextEltId, nextEltTrigger, a.trigger));
-				}
-				previousEltId = a.target;
 			}
 			$slide.data('slide-animator', new Animator(animatorJSON.target, animations));
 		}
@@ -112,12 +99,12 @@ Slides can include elements which then can be animated using the Animator.
 		if ( animator !== undefined && pageLoaded) {
 			if( (from === to-1 || (from === to && to === $[deck]('getSlides').length - 1)) && (! animator.isCompleted()) ) {
 				e.preventDefault();
-				if ( animator.getCursor() == 0 ) {
+				if ( !animator.hasStarted() ) {
 					animator.restart();
 				} else {
 					animator.next();
 				} 
-			} else if ((from === to+1 || (from === to && to === 0)) && animator.getCursor() !== 0) {
+			} else if ((from === to+1 || (from === to && to === 0)) && animator.hasStarted()) {
 				e.preventDefault();
 				animator.prev();
 			}
