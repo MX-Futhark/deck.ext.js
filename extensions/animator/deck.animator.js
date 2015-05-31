@@ -16,9 +16,9 @@ Slides can include elements which then can be animated using the Animator.
 
 (function($, deck, undefined) {
     var $d = $(document);
-	// determines whether a actuel change in slide number has occured before the next action
+	// determine whether a actual change in slide number has occured before the next action
 	hasChanged = false;
-	// determines whether the animators have finished initializing
+	// determine whether the animators have finished initializing
 	pageLoaded = false;
 	
 	$[deck]('extend', 'getCurrentSlideIndex', function() {
@@ -64,36 +64,8 @@ Slides can include elements which then can be animated using the Animator.
 			$slide.data('slide-animator', new Animator(animatorJSON.targetSlide, animations));
 		}
 	});
-	   
-    /*
-        jQuery.deck('Init')
-        */
-    $d.bind('deck.init', function() {
-        var keys = $[deck].defaults.keys;
-		
-		// init all animators
-		$[deck]('initAnimators');
-		
-        /* Bind key events */
-        $d.unbind('keydown.deckanimator').bind('keydown.deckanimator', function(e) {
-			var currentIndex = $[deck]('getCurrentSlideIndex');
-			var nbSlides = $[deck]('getSlides').length;
-            if (currentIndex === nbSlides -1 && !hasChanged && (e.which === keys.next || $.inArray(e.which, keys.next) > -1)) {
-                $d.trigger('deck.beforeChange', [currentIndex, currentIndex]);
-            }
-			if (currentIndex === 0 && !hasChanged && (e.which === keys.previous || $.inArray(e.which, keys.previous) > -1)) {
-                $d.trigger('deck.beforeChange', [currentIndex, currentIndex]);
-            }
-			hasChanged = false;
-        });
-		
-		// if there is no anchor, deck.change isn't trigger and the page is loaded
-		if(!window.location.hash){
-			pageLoaded = true;
-		}
-    })
-    
-	.bind('deck.beforeChange', function(e, from, to) {
+	
+	$[deck]('extend', 'manageAnimations', function(e, from, to) {
 		hasChanged = false;
 
 		/*
@@ -114,6 +86,37 @@ Slides can include elements which then can be animated using the Animator.
 				animator.prev(true);
 			}
 		}
+	});
+	   
+    /*
+        jQuery.deck('Init')
+        */
+    $d.bind('deck.init', function() {
+        var keys = $[deck].defaults.keys;
+		
+		// init all animators
+		$[deck]('initAnimators');
+		
+        /* Bind key events */
+        $d.unbind('keydown.deckanimator').bind('keydown.deckanimator', function(e) {
+			var currentIndex = $[deck]('getCurrentSlideIndex');
+			var nbSlides = $[deck]('getSlides').length;
+            if (currentIndex === nbSlides -1 && !hasChanged && (e.which === keys.next || $.inArray(e.which, keys.next) > -1)) {
+                $[deck]('manageAnimations', e, currentIndex, currentIndex);
+            }
+			if (currentIndex === 0 && !hasChanged && (e.which === keys.previous || $.inArray(e.which, keys.previous) > -1)) {
+                $[deck]('manageAnimations', e, currentIndex, currentIndex);
+            }
+			hasChanged = false;
+        });
+		
+		// if there is no anchor, deck.change isn't trigger and the page is loaded
+		if(!window.location.hash){
+			pageLoaded = true;
+		}
+    })
+	.bind('deck.beforeChange', function(e, from, to) {
+		$[deck]('manageAnimations', e, from, to);
 	})
 	
 	.bind('deck.change', function(e, from, to) {
