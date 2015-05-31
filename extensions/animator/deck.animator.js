@@ -7,12 +7,10 @@ https://github.com/imakewebthings/deck.js/blob/master/GPL-license.txt
 */
 
 /*
-This module provides a support for animated SVG to the deck so as to create 
+This module provides a support for animated elements to the deck so as to create 
 animation like in most presentation solution e.g powerpoint, keynote, etc.
 Slides can include elements which then can be animated using the Animator.
 */
-
-// TODO : refactor
 
 (function($, deck, undefined) {
     var $d = $(document);
