@@ -65,6 +65,9 @@ Slides can include elements which then can be animated using the Animator.
 		}
 	});
 	
+	/*
+		Call animation functions when necessary.
+		*/
 	$[deck]('extend', 'manageAnimations', function(e, from, to) {
 		hasChanged = false;
 
@@ -74,6 +77,7 @@ Slides can include elements which then can be animated using the Animator.
 		 */
 		var animator = $[deck]('getAnimator', from);
 		if ( animator !== undefined && pageLoaded) {
+			// ->
 			if( (from === to-1 || (from === to && to === $[deck]('getSlides').length - 1)) && (! animator.isCompleted()) ) {
 				e.preventDefault();
 				if ( !animator.hasStarted() ) {
@@ -81,6 +85,7 @@ Slides can include elements which then can be animated using the Animator.
 				} else {
 					animator.next(true);
 				} 
+			// <-
 			} else if ((from === to+1 || (from === to && to === 0)) && animator.hasStarted()) {
 				e.preventDefault();
 				animator.prev(true);
@@ -110,7 +115,7 @@ Slides can include elements which then can be animated using the Animator.
 			hasChanged = false;
         });
 		
-		// if there is no anchor, deck.change isn't trigger and the page is loaded
+		// if there is no anchor, deck.change won't be triggered and the page has finished loading
 		if(!window.location.hash){
 			pageLoaded = true;
 		}

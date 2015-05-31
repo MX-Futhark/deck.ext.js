@@ -74,7 +74,7 @@ function Animator(target, animations) {
 		Start animator from the last state.
 		*/
 	this.startFromTheEnd = function() {
-		this.init();
+		init();
 		animations.forEach( function(a){
             a.play(target, false, true);
 			cursor++;
