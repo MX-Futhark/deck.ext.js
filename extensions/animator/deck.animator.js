@@ -51,11 +51,11 @@ Slides can include elements which then can be animated using the Animator.
 			animations = new Array();
 			for(animInd = 0; animInd < animationsJSON.length; ++animInd) {
 				if(animationsJSON[animInd].type === "move") {
-					animations.push(Animator.Move(animInd, animationsJSON[animInd]));
+					animations.push(Animator.Move(animationsJSON[animInd]));
 				} else if (animationsJSON[animInd].type === 'appear') {
-					animations.push(Animator.Appear(animInd, animationsJSON[animInd]));
+					animations.push(Animator.Appear(animationsJSON[animInd]));
 				} else if (animationsJSON[animInd].type === 'disappear') {
-					animations.push(Animator.Disappear(animInd, animationsJSON[animInd]));
+					animations.push(Animator.Disappear(animationsJSON[animInd]));
 				}
 			}
 			animationsJSON.forEach( function(a){

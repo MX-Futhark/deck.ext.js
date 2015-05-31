@@ -66,7 +66,7 @@ function Animator(target, animations) {
         Restart animator.
         */
     this.restart = function() {
-        this.init();
+        init();
 		this.next(false);
     }
 	
@@ -80,13 +80,6 @@ function Animator(target, animations) {
 			cursor++;
         });
 		$(document).trigger(events.completed, {'target':target});
-	}
-	
-	/*
-		Finish a given animation.
-		*/
-	this.finishAnimation = function(action) {
-		$(action.target, target).finish();
 	}
 	
 	/*
@@ -105,9 +98,9 @@ function Animator(target, animations) {
 	
 	/*
 		Return true if the animation is ongoing
-			*/
+		*/
 	this.isOngoing = function() {
-		for(i = 0; i < animations.length; ++i) {
+		for(var i = 0; i < animations.length; ++i) {
 			if($(animations[i].action.target, target).is(':animated')) {
 				return true;
 			}
@@ -116,20 +109,45 @@ function Animator(target, animations) {
 	}
 	
 	/*
-		Play a sequence of animation.
+		Add a callback to animationSequence[i].
+		*/
+	this.queueAnimation = function(animationSequence, i, isReversed, skip) {
+		animationSequence[i].action.nextPlay = function() {
+			if(i < animationSequence.length - 1) {
+				animationSequence[i+1].play(target, isReversed, skip);
+				for(j = i+2; j < animationSequence.length ; ++j) {
+					if(animationSequence[j].action.trigger === TriggerEnum.WITHPREVIOUS) {
+						animationSequence[j].play(target, isReversed, skip);
+					}
+				}
+			}
+		};
+	}
+	
+	/*
+		Play a sequence of animation
 		*/
 	this.play = function(animationSequence, isReversed, skip) {
 		if(animationSequence.length === 0) return;
-		var lastPlayed = 0;
-		animationSequence[0].play(target, isReversed, skip);
-		for(i = 1; i < animationSequence.length && (animationSequence[i].action.trigger === TriggerEnum.WITHPREVIOUS || isReversed); ++i) {
-			animationSequence[i].play(target, isReversed, skip);
-			lastPlayed = i;
+		
+		if(isReversed) {
+			animationSequence.forEach(function(a){
+				a.play(target, isReversed, skip);
+			});
+		} else {
+			for(i = 0; i < animationSequence.length - 1; ++i) {
+				if(animationSequence[i].action.trigger !== TriggerEnum.WITHPREVIOUS 
+						|| animationSequence[i+1].action.trigger === TriggerEnum.AFTERPREVIOUS) {
+					this.queueAnimation(animationSequence, i, isReversed, skip);
+				}
+			}
+			animationSequence[0].play(target, isReversed, skip);
 		}
-		if(animationSequence[lastPlayed].index === animations.length && !isReversed) {
+
+		if(animationSequence[animationSequence.length-1].action.id === animations[animations.length-1].action.id && !isReversed) {
 			$(document).trigger(events.completed, {'target':target});
 		}
-		if(animationSequence[lastPlayed].index === 0 && isReversed) {
+		if(animationSequence[animationSequence.length-1].action.id === animations[0].action.id && isReversed) {
 			$(document).trigger(events.completedReverse, {'target':target});
 		}
 	}
@@ -140,7 +158,7 @@ function Animator(target, animations) {
 	this.finishOngoing = function() {
 		var self = this;
 		animations.forEach(function(a){
-			self.finishAnimation(a.action);
+			$(a.action.target, target).finish();
 		});
 	}
 
@@ -151,11 +169,7 @@ function Animator(target, animations) {
     this.next = function(verifyOngoing) {
 		// if a sequence of action is ongoing, cut the animation short on key press
 		if(verifyOngoing && this.isOngoing()) {
-			console.log("ongoing");
 			this.finishOngoing();
-			while(cursor < animations.length && animations[cursor].action.trigger !== TriggerEnum.ONCLICK) {
-				animations[cursor++].play(target, false, true);
-			}
 			return;
 		}
 		// else, do the actual next stuff
@@ -166,7 +180,7 @@ function Animator(target, animations) {
 				anim = animations[cursor++];
 				animationSequence.push(anim);
 				
-				if(cursor < anims.length && animations[cursor].action.trigger !== TriggerEnum.WITHPREVIOUS) {
+				if(cursor < anims.length && animations[cursor].action.trigger === TriggerEnum.ONCLICK) {
 					break;
 				}
 			} while(cursor < anims.length);
@@ -206,63 +220,13 @@ function Animator(target, animations) {
         }
 	}
     
-    /*
-        Push new animation into the animator.
-        */
-    this.push = function(anim) {
-        this.anims.push(anim);
-    }
-	
-	/*
-		Continue the current sequence of animations.
-		*/
-	this.continuePlaying = function(action, reverse) {
-		// find the index of the current action in animations
-		curInd = -1;
-		for(i = 0; i < animations.length; ++i) {
-			if(animations[i].action.id === action.id) {
-				curInd = i;
-				break;
-			}
-		}
-		
-		if(curInd === -1) return;
-
-		
-		if(reverse) {
-			if(action.trigger != TriggerEnum.ONCLICK) {
-				this.prev(false);
-			}
-		} else {
-			// play the next sequence automatically if the next key (non-withPrevious) action is triggered on afterPrevious
-			// find next key animation
-			nextInd = curInd+1;
-			while(nextInd < animations.length && animations[nextInd].action.trigger === TriggerEnum.WITHPREVIOUS) {
-				++nextInd;
-			}
-			// stop if the sequence of automatically playing actions is finished
-			if(nextInd >= animations.length || animations[nextInd].action.trigger === TriggerEnum.ONCLICK) {
-				return;
-			}
-			
-			this.next(false);
-		}
-	}
-    
-    this.init = function() {           
+    function init() {           
         $(document).trigger(events.beforeInitialize, {'target':target});
         
         cursor = 0;
         if( anims.length>0 ) {
-			for(i = 0; i < animations.length; ++i) {
-				animations[i].action.animator = this;
-			}
 			anim = animations[cursor];
             $(document).trigger(events.initialize, {'target':target}); 
-			// autostart if necessary
-			if(anim.action.trigger !== TriggerEnum.ONCLICK) {
-				this.next(false);
-			}
         } else {
             throw "Animator requires at list one animation."
         }
@@ -276,12 +240,11 @@ function Animator(target, animations) {
 /*
     Animator.Appear(prevA, a, nextA)
 
-	ind   index of the action in the corresponding JSON animator array
     a   current action JSON descriptor
     */
-Animator.Appear = function(ind, a) {
-	return generateChainedAnimation(ind, a, function(t, reverse, skip) {
-		playRevertibleAnimation(a, t, 
+Animator.Appear = function(a) {
+	return generateAnimatedAction(a, function(t, reverse, skip) {
+		playReversibleAnimation(a, t, 
 			{opacity: 1}, {opacity: 0}, 
 			reverse, skip);
 	});
@@ -290,12 +253,11 @@ Animator.Appear = function(ind, a) {
 /*
     Animator.Disappear(prevA, a, nextA)
 
-	ind   index of the action in the corresponding JSON animator array
     a   current action JSON descriptor
     */
-Animator.Disappear = function(ind, a) {
-	return generateChainedAnimation(ind,  a, function(t, reverse, skip) {
-		playRevertibleAnimation(a, t, 
+Animator.Disappear = function(a) {
+	return generateAnimatedAction(a, function(t, reverse, skip) {
+		playReversibleAnimation(a, t, 
 			{opacity: 0}, {opacity: 1}, 
 			reverse, skip);
 	});
@@ -304,22 +266,18 @@ Animator.Disappear = function(ind, a) {
 /*
     Animator.Move(prevA, a, nextA)
 
-	ind   index of the action in the corresponding JSON animator array
     a   current action JSON descriptor
     */
-Animator.Move = function(ind, a) {
-	return generateChainedAnimation(ind, a, function(t, reverse, skip) {
-		// One needs to wait for the animation to be finished to avoid using the wrong starting coordinates
-		//$(a.target, t).promise().done(function(){
-			currentX = parseInt($(a.target).css("left"));
-			currentY = parseInt($(a.target).css("top"));
-			trX = parseInt(a.trX);
-			trY = parseInt(a.trY);
-			playRevertibleAnimation(a, t, 
-				{left: currentX+trX, top: currentY+trY}, 
-				{left: currentX-trX, top: currentY-trY}, 
-				reverse, skip);
-		//});
+Animator.Move = function(a) {
+	return generateAnimatedAction(a, function(t, reverse, skip) {
+		currentX = parseInt($(a.target).css("left"));
+		currentY = parseInt($(a.target).css("top"));
+		trX = parseInt(a.trX);
+		trY = parseInt(a.trY);
+		playReversibleAnimation(a, t, 
+			{left: currentX+trX, top: currentY+trY}, 
+			{left: currentX-trX, top: currentY-trY}, 
+			reverse, skip);
 	});
 }
 
@@ -331,7 +289,7 @@ Animator.Move = function(ind, a) {
 /*
 	Animate the target element depending on various playing options.
 	*/
-playRevertibleAnimation = function(a, t, 
+playReversibleAnimation = function(a, t, 
 		cssProperty, reverseCssProperty, 
 		reverse, skip) {
 	d = a.duration;
@@ -339,22 +297,16 @@ playRevertibleAnimation = function(a, t,
 	if(reverse) {
 		$(a.target, t).animate(reverseCssProperty, d);
 	} else {
-		$(a.target, t).animate(cssProperty, d);
+		$(a.target, t).animate(cssProperty, d, undefined, a.nextPlay);
 	}
-	$(a.target, t).promise().done(function(){
-		if(a.trigger !== TriggerEnum.WITHPREVIOUS && !reverse && !skip) {
-			a.animator.continuePlaying(a, reverse);	
-		}
-	});
 }
 
 /*
 	Generates an object containing information about the current animation, 
 	how to play it, and information about the next and previous animations.
 	*/
-generateChainedAnimation = function(ind, currentA, currentAnimFunc) {
+generateAnimatedAction = function(currentA, currentAnimFunc) {
 	return {
-		index: ind,
 		action: currentA,
 		play: currentAnimFunc
 	};
