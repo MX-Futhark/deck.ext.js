@@ -7,18 +7,16 @@ https://github.com/imakewebthings/deck.js/blob/master/GPL-license.txt
 */
 
 /*
-This module provides a support for animated SVG to the deck so as to create 
+This module provides a support for animated elements to the deck so as to create 
 animation like in most presentation solution e.g powerpoint, keynote, etc.
 Slides can include elements which then can be animated using the Animator.
 */
 
-// TODO : refactor
-
 (function($, deck, undefined) {
     var $d = $(document);
-	// determines whether a actuel change in slide number has occured before the next action
-	hasChanged = false;
-	// determines whether the animators have finished initializing
+	// determine whether a actual change in slide number has occured before the next action
+	slideChangeHappened = false;
+	// determine whether the animators have finished initializing
 	pageLoaded = false;
 	
 	$[deck]('extend', 'getCurrentSlideIndex', function() {
@@ -51,16 +49,44 @@ Slides can include elements which then can be animated using the Animator.
 			animations = new Array();
 			for(animInd = 0; animInd < animationsJSON.length; ++animInd) {
 				if(animationsJSON[animInd].type === "move") {
-					animations.push(Animator.Move(animInd, animationsJSON[animInd]));
+					animations.push(Animator.Move(animationsJSON[animInd]));
 				} else if (animationsJSON[animInd].type === 'appear') {
-					animations.push(Animator.Appear(animInd, animationsJSON[animInd]));
+					animations.push(Animator.Appear(animationsJSON[animInd]));
 				} else if (animationsJSON[animInd].type === 'disappear') {
-					animations.push(Animator.Disappear(animInd, animationsJSON[animInd]));
+					animations.push(Animator.Disappear(animationsJSON[animInd]));
 				}
 			}
 			$slide.data('slide-animator', new Animator(animatorJSON.target, animations));
 		}
 	});
+	
+	/*
+		Call animation functions when necessary.
+		*/
+	function manageAnimations(e, from, to) {
+		slideChangeHappened = false;
+
+		/*
+		 * If the animations of the current slide are not complete,
+		 * we keep on doing them and we don't go to the next slide.
+		 */
+		var animator = $[deck]('getAnimator', from);
+		if ( animator !== undefined && pageLoaded) {
+			// ->
+			if( (from === to-1 || (from === to && to === $[deck]('getSlides').length - 1)) && (! animator.isCompleted()) ) {
+				e.preventDefault();
+				if ( !animator.hasStarted() ) {
+					animator.restart();
+				} else {
+					animator.next(true);
+				} 
+			// <-
+			} else if ((from === to+1 || (from === to && to === 0)) && animator.hasStarted()) {
+				e.preventDefault();
+				animator.prev(true);
+			}
+		}
+	}
 	   
     /*
         jQuery.deck('Init')
@@ -75,46 +101,26 @@ Slides can include elements which then can be animated using the Animator.
         $d.unbind('keydown.deckanimator').bind('keydown.deckanimator', function(e) {
 			var currentIndex = $[deck]('getCurrentSlideIndex');
 			var nbSlides = $[deck]('getSlides').length;
-            if (currentIndex === nbSlides -1 && !hasChanged && (e.which === keys.next || $.inArray(e.which, keys.next) > -1)) {
-                $d.trigger('deck.beforeChange', [currentIndex, currentIndex]);
+            if (currentIndex === nbSlides -1 && !slideChangeHappened && (e.which === keys.next || $.inArray(e.which, keys.next) > -1)) {
+                manageAnimations(e, currentIndex, currentIndex);
             }
-			if (currentIndex === 0 && !hasChanged && (e.which === keys.previous || $.inArray(e.which, keys.previous) > -1)) {
-                $d.trigger('deck.beforeChange', [currentIndex, currentIndex]);
+			if (currentIndex === 0 && !slideChangeHappened && (e.which === keys.previous || $.inArray(e.which, keys.previous) > -1)) {
+                manageAnimations(e, currentIndex, currentIndex);
             }
-			hasChanged = false;
+			slideChangeHappened = false;
         });
 		
-		// if there is no anchor, deck.change isn't trigger and the page is loaded
+		// if there is no anchor, deck.change won't be triggered and the page has finished loading
 		if(!window.location.hash){
 			pageLoaded = true;
 		}
     })
-    
 	.bind('deck.beforeChange', function(e, from, to) {
-		hasChanged = false;
-
-		/*
-		 * If the animations of the current slide are not complete,
-		 * we keep on doing them and we don't go to the next slide.
-		 */
-		var animator = $[deck]('getAnimator', from);
-		if ( animator !== undefined && pageLoaded) {
-			if( (from === to-1 || (from === to && to === $[deck]('getSlides').length - 1)) && (! animator.isCompleted()) ) {
-				e.preventDefault();
-				if ( !animator.hasStarted() ) {
-					animator.restart();
-				} else {
-					animator.next(true);
-				} 
-			} else if ((from === to+1 || (from === to && to === 0)) && animator.hasStarted()) {
-				e.preventDefault();
-				animator.prev(true);
-			}
-		}
+		manageAnimations(e, from, to);
 	})
 	
 	.bind('deck.change', function(e, from, to) {
-		hasChanged = true;
+		slideChangeHappened = true;
 		// when the presentation hasn't been loaded from the first slide,
 		// the previous animations are set to their final states
 		if(!pageLoaded) {
