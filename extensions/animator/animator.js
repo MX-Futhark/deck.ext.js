@@ -24,30 +24,39 @@ function Animator(target, animations) {
 		
 		/*
 		This event fires whenever a sequence of animations is performed. The callback
-                function is passed three parameters, target, index and reverse, equal to
+                function is passed three parameters, target, id and reverse, equal to
                 the target on which the animation is performed, the id of
                 the animation, and a boolean equal to true if the animation has been 
 				performed in reverse order
 		*/
-		progress: 'deck.animator.progress',
+		sequenceStart: 'deck.animator.sequence.start',
+		
+		/*
+		This event fires whenever a sequence of animations has finished performing. The callback
+                function is passed three parameters, target, id and reverse, equal to
+                the target on which the animation is performed, the id of
+                the animation, and a boolean equal to true if the animation has been 
+				performed in reverse order
+		*/
+		sequenceStop: 'deck.animator.sequence.stop',
 		
 		/*
 		This event fires whenever a single action is performed. The callback function
-				is passed three parameters, target, index and reverse, equal to
+				is passed three parameters, target, id and reverse, equal to
                 the target on which the animation is performed, the id of
                 the animation, and a boolean equal to true if the animation has been 
 				performed in reverse order
 		*/
-		perform: 'deck.animator.perform',
+		actionStart: 'deck.animator.action.start',
 		
 		/*
 		This event fires whenever a single action has finished performing. The callback function
-				is passed three parameters, target, index and reverse, equal to
+				is passed three parameters, target, id and reverse, equal to
                 the target on which the animation is performed, the id of
                 the animation, and a boolean equal to true if the animation has been 
 				performed in reverse order
 		*/
-		performed: 'deck.animator.performed',
+		actionStop: 'deck.animator.action.stop',
                 
 		/*
 		This event fires at the beginning of deck.animator initialization.
@@ -125,8 +134,8 @@ function Animator(target, animations) {
 		}
 		// else, do the actual next stuff
         if( cursor < anims.length ) {
-			$(document).trigger(events.progress, {'target':target, 'id':animations[cursor].action.id, 'reverse':false});
 			var animationSequence = new Array();
+			$(document).trigger(events.sequenceStart, {'target':target, 'id':animations[cursor].action.id, 'reverse':false});
 			do {
 				anim = animations[cursor++];
 				animationSequence.push(anim);
@@ -135,7 +144,7 @@ function Animator(target, animations) {
 					break;
 				}
 			} while(cursor < anims.length);
-			playSequence(animationSequence, false, false);
+			playSequence(this, animationSequence, false, false);
 			if(cursor === anims.length) {
 				$(document).trigger(events.completed, {'target':target, 'reverse':false});
 			}
@@ -154,9 +163,9 @@ function Animator(target, animations) {
 				this.finishOngoing();
 				return;
 			}
-			
-			$(document).trigger(events.progress, {'target':target, 'index':animations[cursor-1].action.id, 'reverse':true});
+
 			var animationSequence = new Array();
+			$(document).trigger(events.sequenceStart, {'target':target, 'index':animations[cursor-1].action.id, 'reverse':true});
 			do {
 				anim = animations[--cursor];
 				animationSequence.push(anim);
@@ -168,7 +177,7 @@ function Animator(target, animations) {
 			if(cursor === 0) {
 				$(document).trigger(events.completed, {'target':target, 'reverse':true});
 			}
-			playSequence(animationSequence, true, true);
+			playSequence(this, animationSequence, true, true);
         } else {
             $(document).trigger(events.completed, {'target':target, 'reverse':true});
         }
@@ -183,14 +192,14 @@ function Animator(target, animations) {
 		});
 	}
 	
-		/*
+	/*
 		Add a callback to animationSequence[i].
 		*/
-	function queueAnimation(animationSequence, i, reverse, skip) {
+	function queueAnimation(animator, animationSequence, i, reverse, skip) {
 		animationSequence[i].action.nextPlay = function() {
-			$(document).trigger(events.performed, {'target':target, 'id':animationSequence[i].action.id, 'reverse':reverse});
+			$(document).trigger(events.actionStop, {'target':target, 'id':animationSequence[i].action.id, 'reverse':reverse});
 			if(i < animationSequence.length - 1 &&
-					(animationSequence[i].action.trigger !== TriggerEnum.WITHPREVIOUS 
+					(animationSequence[i].action.trigger === TriggerEnum.ONCHANGE 
 						|| animationSequence[i+1].action.trigger === TriggerEnum.AFTERPREVIOUS)) {
 				playAnimation(animationSequence[i+1], reverse, skip);
 				for(j = i+2; j < animationSequence.length ; ++j) {
@@ -199,6 +208,10 @@ function Animator(target, animations) {
 					}
 				}
 			}
+			
+			if(!animator.isOngoing()) {
+				$(document).trigger(events.sequenceStop, {'target':target, 'id':animationSequence[i].action.id, 'reverse':reverse});
+			}
 		};
 	}
 	
@@ -206,14 +219,14 @@ function Animator(target, animations) {
 		Play a single action.
 		*/
 	function playAnimation(animation, reverse, skip) {
-		$(document).trigger(events.perform, {'target':target, 'id':animation.action.id, 'reverse':reverse});
+		$(document).trigger(events.actionStart, {'target':target, 'id':animation.action.id, 'reverse':reverse});
 		animation.play(target, reverse, skip);
 	}
 	
 	/*
 		Play a sequence of animation
 		*/
-	function playSequence(animationSequence, reverse, skip) {
+	function playSequence(animator, animationSequence, reverse, skip) {
 		if(animationSequence.length === 0) return;
 		
 		if(reverse) {
@@ -221,8 +234,8 @@ function Animator(target, animations) {
 				playAnimation(a, reverse, skip);
 			});
 		} else {
-			for(i = 0; i < animationSequence.length - 1; ++i) {
-				queueAnimation(animationSequence, i, reverse, skip);
+			for(i = 0; i < animationSequence.length; ++i) {
+				queueAnimation(animator, animationSequence, i, reverse, skip);
 			}
 			playAnimation(animationSequence[0], reverse, skip);
 		}

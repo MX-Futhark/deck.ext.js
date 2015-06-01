@@ -18,6 +18,14 @@ Slides can include elements which then can be animated using the Animator.
 	slideChangeHappened = false;
 	// determine whether the animators have finished initializing
 	pageLoaded = false;
+	// determine whether the slides play automtically
+	autoplayEnabled = false;
+	
+    $.extend(true, $[deck].defaults, {
+        keys: {
+            autoplay: 65 // a
+        }
+    });
 	
 	$[deck]('extend', 'getCurrentSlideIndex', function() {
 		var current = $[deck]('getSlide');
@@ -63,6 +71,16 @@ Slides can include elements which then can be animated using the Animator.
 		}
 	});
 	
+	$[deck]('extend', 'autoplayNext', function(e) {
+		var currentIndex = $[deck]('getCurrentSlideIndex');
+		var animator = $[deck]('getAnimator', currentIndex);
+		manageAnimations(e, currentIndex, currentIndex+1);
+		if(animator !== undefined && animator.isCompleted()) {
+			$[deck]('next');
+			manageAnimations(e, currentIndex+1, currentIndex+2);
+		}
+	});
+	
 	/*
 		Call animation functions when necessary.
 		*/
@@ -77,7 +95,10 @@ Slides can include elements which then can be animated using the Animator.
 		if ( animator !== undefined && pageLoaded) {
 			// ->
 			if( (from === to-1 || (from === to && to === $[deck]('getSlides').length - 1)) && (! animator.isCompleted()) ) {
-				e.preventDefault();
+				// the function has been called from beforeChange
+				if(e !== undefined) {
+					e.preventDefault();
+				}
 				if ( !animator.hasStarted() ) {
 					animator.restart();
 				} else {
@@ -85,7 +106,9 @@ Slides can include elements which then can be animated using the Animator.
 				} 
 			// <-
 			} else if ((from === to+1 || (from === to && to === 0)) && animator.hasStarted()) {
-				e.preventDefault();
+				if(e !== undefined) {
+					e.preventDefault();
+				}
 				animator.prev(true);
 			}
 		}
@@ -104,13 +127,22 @@ Slides can include elements which then can be animated using the Animator.
         $d.unbind('keydown.deckanimator').bind('keydown.deckanimator', function(e) {
 			var currentIndex = $[deck]('getCurrentSlideIndex');
 			var nbSlides = $[deck]('getSlides').length;
-            if (currentIndex === nbSlides -1 && !slideChangeHappened && (e.which === keys.next || $.inArray(e.which, keys.next) > -1)) {
-                manageAnimations(e, currentIndex, currentIndex);
-            }
-			if (currentIndex === 0 && !slideChangeHappened && (e.which === keys.previous || $.inArray(e.which, keys.previous) > -1)) {
-                manageAnimations(e, currentIndex, currentIndex);
-            }
-			slideChangeHappened = false;
+			if(e.which === keys.autoplay) {
+				if(!autoplayEnabled) {
+					autoplayEnabled = true;
+					$[deck]('autoplayNext');
+				} else {
+					autoplayEnabled = false;
+				}
+			} else {
+				if (currentIndex === nbSlides -1 && !slideChangeHappened && (e.which === keys.next || $.inArray(e.which, keys.next) > -1)) {
+					manageAnimations(undefined, currentIndex, currentIndex);
+				}
+				if (currentIndex === 0 && !slideChangeHappened && (e.which === keys.previous || $.inArray(e.which, keys.previous) > -1)) {
+					manageAnimations(undefined, currentIndex, currentIndex);
+				}
+				slideChangeHappened = false;
+			}
         });
 		
 		// if there is no anchor, deck.change won't be triggered and the page has finished loading
@@ -121,7 +153,6 @@ Slides can include elements which then can be animated using the Animator.
 	.bind('deck.beforeChange', function(e, from, to) {
 		manageAnimations(e, from, to);
 	})
-	
 	.bind('deck.change', function(e, from, to) {
 		slideChangeHappened = true;
 		// when the presentation hasn't been loaded from the first slide,
@@ -135,6 +166,11 @@ Slides can include elements which then can be animated using the Animator.
 			}
 		}
 		pageLoaded = true;
+	})
+	.bind('deck.animator.sequence.stop', function(e, options) {
+		if(autoplayEnabled) {
+			$[deck]('autoplayNext', e);
+		}
 	});
 	
 		
