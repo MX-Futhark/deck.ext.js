@@ -11,38 +11,43 @@ function Animator(target, animations) {
     
     events = {
 		/*
-		This event fires whenever the current animation is completed.
-                The callback function is passed one parameter, target, equal to 
-                the target on which the animation completed.
+		This event fires whenever the current animation is has nothing left to start playing.
+                The callback function is passed two parameters, target, equal to 
+                the target on which the animation completed, and reverse, 
+				true if the animation has been completed in reverse order
 		
-		$(document).bind('deck.animator.completed', function(target) {
+		$(document).bind('deck.animator.completed', function(target, reverse) {
 		   alert('The animation of '+target+' has just completed.');
 		});
 		*/
 		completed: 'deck.animator.completed',
 		
 		/*
-		This event fires whenever the current animation has finished playing in reverse.
-                The callback function is passed one parameter, target, equal to 
-                the target on which the animation completed.
-		*/
-		completedReverse: 'deck.animator.completedReverse',
-		
-		/*
 		This event fires whenever a sequence of animations is performed. The callback
-                function is passed two parameters, target and index, equal to
-                the target on which the animation is performed and the index of
-                the animation i.e between 0 and animation.lenght.
+                function is passed three parameters, target, index and reverse, equal to
+                the target on which the animation is performed, the id of
+                the animation, and a boolean equal to true if the animation has been 
+				performed in reverse order
 		*/
 		progress: 'deck.animator.progress',
 		
 		/*
-		This event fires whenever a sequence of reverse animations is performed. The callback
-                function is passed two parameters, target and index, equal to
-                the target on which the animation is performed and the index of
-                the animation i.e between 0 and animation.lenght.
+		This event fires whenever a single action is performed. The callback function
+				is passed three parameters, target, index and reverse, equal to
+                the target on which the animation is performed, the id of
+                the animation, and a boolean equal to true if the animation has been 
+				performed in reverse order
 		*/
-		progressReverse: 'deck.animator.progressReverse',
+		perform: 'deck.animator.perform',
+		
+		/*
+		This event fires whenever a single action has finished performing. The callback function
+				is passed three parameters, target, index and reverse, equal to
+                the target on which the animation is performed, the id of
+                the animation, and a boolean equal to true if the animation has been 
+				performed in reverse order
+		*/
+		performed: 'deck.animator.performed',
                 
 		/*
 		This event fires at the beginning of deck.animator initialization.
@@ -76,10 +81,10 @@ function Animator(target, animations) {
 	this.startFromTheEnd = function() {
 		init();
 		animations.forEach( function(a){
-            a.play(target, false, true);
+            playAnimation(a, false, true);
 			cursor++;
         });
-		$(document).trigger(events.completed, {'target':target});
+		$(document).trigger(events.completed, {'target':target, 'reverse':true});
 	}
 	
 	/*
@@ -107,64 +112,10 @@ function Animator(target, animations) {
 		}
 		return false;
 	}
-	
-	/*
-		Add a callback to animationSequence[i].
-		*/
-	this.queueAnimation = function(animationSequence, i, isReversed, skip) {
-		animationSequence[i].action.nextPlay = function() {
-			if(i < animationSequence.length - 1) {
-				animationSequence[i+1].play(target, isReversed, skip);
-				for(j = i+2; j < animationSequence.length ; ++j) {
-					if(animationSequence[j].action.trigger === TriggerEnum.WITHPREVIOUS) {
-						animationSequence[j].play(target, isReversed, skip);
-					}
-				}
-			}
-		};
-	}
-	
-	/*
-		Play a sequence of animation
-		*/
-	this.play = function(animationSequence, isReversed, skip) {
-		if(animationSequence.length === 0) return;
-		
-		if(isReversed) {
-			animationSequence.forEach(function(a){
-				a.play(target, isReversed, skip);
-			});
-		} else {
-			for(i = 0; i < animationSequence.length - 1; ++i) {
-				if(animationSequence[i].action.trigger !== TriggerEnum.WITHPREVIOUS 
-						|| animationSequence[i+1].action.trigger === TriggerEnum.AFTERPREVIOUS) {
-					this.queueAnimation(animationSequence, i, isReversed, skip);
-				}
-			}
-			animationSequence[0].play(target, isReversed, skip);
-		}
-
-		if(animationSequence[animationSequence.length-1].action.id === animations[animations.length-1].action.id && !isReversed) {
-			$(document).trigger(events.completed, {'target':target});
-		}
-		if(animationSequence[animationSequence.length-1].action.id === animations[0].action.id && isReversed) {
-			$(document).trigger(events.completedReverse, {'target':target});
-		}
-	}
-	
-	/*
-		Finish all ongoing animations
-		*/
-	this.finishOngoing = function() {
-		var self = this;
-		animations.forEach(function(a){
-			$(a.action.target, target).finish();
-		});
-	}
 
     /*  
         Move to the next state (right before an afterPrevious-triggered action and, 
-		by extension by calling this.play, right before the next onClick-triggered action).
+		by extension by calling playSequence, right before the next onClick-triggered action).
         */
     this.next = function(verifyOngoing) {
 		// if a sequence of action is ongoing, cut the animation short on key press
@@ -174,7 +125,7 @@ function Animator(target, animations) {
 		}
 		// else, do the actual next stuff
         if( cursor < anims.length ) {
-			$(document).trigger(events.progress, {'target':target, 'index':cursor});
+			$(document).trigger(events.progress, {'target':target, 'id':animations[cursor].action.id, 'reverse':false});
 			var animationSequence = new Array();
 			do {
 				anim = animations[cursor++];
@@ -184,9 +135,12 @@ function Animator(target, animations) {
 					break;
 				}
 			} while(cursor < anims.length);
-			this.play(animationSequence, false, false);
+			playSequence(animationSequence, false, false);
+			if(cursor === anims.length) {
+				$(document).trigger(events.completed, {'target':target, 'reverse':false});
+			}
         } else {
-            $(document).trigger(events.completed, {'target':target});
+            $(document).trigger(events.completed, {'target':target, 'reverse':false});
         }
     }
 	
@@ -201,7 +155,7 @@ function Animator(target, animations) {
 				return;
 			}
 			
-			$(document).trigger(events.progressReverse, {'target':target, 'index':cursor});
+			$(document).trigger(events.progress, {'target':target, 'index':animations[cursor-1].action.id, 'reverse':true});
 			var animationSequence = new Array();
 			do {
 				anim = animations[--cursor];
@@ -212,12 +166,66 @@ function Animator(target, animations) {
 				}
 			} while(cursor > 0);
 			if(cursor === 0) {
-				$(document).trigger(events.completedReverse, {'target':target});
+				$(document).trigger(events.completed, {'target':target, 'reverse':true});
 			}
-			this.play(animationSequence, true, true);
+			playSequence(animationSequence, true, true);
         } else {
-            $(document).trigger(events.completedReverse, {'target':target});
+            $(document).trigger(events.completed, {'target':target, 'reverse':true});
         }
+	}
+	
+	/*
+		Finish immediatly all ongoing animations
+		*/
+	this.finishOngoing = function() {
+		animations.forEach(function(a){
+			$(a.action.target, target).finish();
+		});
+	}
+	
+		/*
+		Add a callback to animationSequence[i].
+		*/
+	function queueAnimation(animationSequence, i, reverse, skip) {
+		animationSequence[i].action.nextPlay = function() {
+			$(document).trigger(events.performed, {'target':target, 'id':animationSequence[i].action.id, 'reverse':reverse});
+			if(i < animationSequence.length - 1 &&
+					(animationSequence[i].action.trigger !== TriggerEnum.WITHPREVIOUS 
+						|| animationSequence[i+1].action.trigger === TriggerEnum.AFTERPREVIOUS)) {
+				playAnimation(animationSequence[i+1], reverse, skip);
+				for(j = i+2; j < animationSequence.length ; ++j) {
+					if(animationSequence[j].action.trigger === TriggerEnum.WITHPREVIOUS) {
+						playAnimation(animationSequence[j], reverse, skip);
+					}
+				}
+			}
+		};
+	}
+	
+	/*
+		Play a single action.
+		*/
+	function playAnimation(animation, reverse, skip) {
+		$(document).trigger(events.perform, {'target':target, 'id':animation.action.id, 'reverse':reverse});
+		animation.play(target, reverse, skip);
+	}
+	
+	/*
+		Play a sequence of animation
+		*/
+	function playSequence(animationSequence, reverse, skip) {
+		if(animationSequence.length === 0) return;
+		
+		if(reverse) {
+			animationSequence.forEach(function(a){
+				playAnimation(a, reverse, skip);
+			});
+		} else {
+			for(i = 0; i < animationSequence.length - 1; ++i) {
+				queueAnimation(animationSequence, i, reverse, skip);
+			}
+			playAnimation(animationSequence[0], reverse, skip);
+		}
 	}
     
     function init() {           
