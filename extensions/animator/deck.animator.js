@@ -41,6 +41,7 @@ Slides can include elements which then can be animated using the Animator.
 		*/
 	$[deck]('extend', 'getAnimator', function(slideNum) {
 		var $slide = $[deck]('getSlide', slideNum);
+		if(!$slide) return undefined;
 		return $slide.data('slide-animator');
 	});
 	
@@ -136,9 +137,11 @@ Slides can include elements which then can be animated using the Animator.
 				}
 			} else {
 				if (currentIndex === nbSlides -1 && !slideChangeHappened && (e.which === keys.next || $.inArray(e.which, keys.next) > -1)) {
+					autoplayEnabled = false;
 					manageAnimations(undefined, currentIndex, currentIndex);
 				}
 				if (currentIndex === 0 && !slideChangeHappened && (e.which === keys.previous || $.inArray(e.which, keys.previous) > -1)) {
+					autoplayEnabled = false;
 					manageAnimations(undefined, currentIndex, currentIndex);
 				}
 				slideChangeHappened = false;
