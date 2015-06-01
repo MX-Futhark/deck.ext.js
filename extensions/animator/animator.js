@@ -1,5 +1,5 @@
 TriggerEnum = {
-	ONCLICK: "onClick",
+	ONCHANGE: "onChange",
 	WITHPREVIOUS: "withPrevious",
 	AFTERPREVIOUS: "afterPrevious"
 }
@@ -115,7 +115,7 @@ function Animator(target, animations) {
 
     /*  
         Move to the next state (right before an afterPrevious-triggered action and, 
-		by extension by calling playSequence, right before the next onClick-triggered action).
+		by extension by calling playSequence, right before the next onChange-triggered action).
         */
     this.next = function(verifyOngoing) {
 		// if a sequence of action is ongoing, cut the animation short on key press
@@ -131,7 +131,7 @@ function Animator(target, animations) {
 				anim = animations[cursor++];
 				animationSequence.push(anim);
 				
-				if(cursor < anims.length && animations[cursor].action.trigger === TriggerEnum.ONCLICK) {
+				if(cursor < anims.length && animations[cursor].action.trigger === TriggerEnum.ONCHANGE) {
 					break;
 				}
 			} while(cursor < anims.length);
@@ -145,7 +145,7 @@ function Animator(target, animations) {
     }
 	
 	/*
-		Move to the previous state (right before the next (from past to future) onClick-triggered action).
+		Move to the previous state (right before the next (from past to future) onChange-triggered action).
 		*/
 	this.prev = function(verifyOngoing) {
 		if( cursor > 0 ) {
@@ -161,7 +161,7 @@ function Animator(target, animations) {
 				anim = animations[--cursor];
 				animationSequence.push(anim);
 				
-				if(cursor > 0 && animations[cursor].action.trigger === TriggerEnum.ONCLICK) {
+				if(cursor > 0 && animations[cursor].action.trigger === TriggerEnum.ONCHANGE) {
 					break;
 				}
 			} while(cursor > 0);

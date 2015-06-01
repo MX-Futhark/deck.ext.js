@@ -15,7 +15,7 @@ Slides can include elements which then can be animated using the Animator.
 (function($, deck, undefined) {
     var $d = $(document);
 	// determine whether a actual change in slide number has occured before the next action
-	hasChanged = false;
+	slideChangeHappened = false;
 	// determine whether the animators have finished initializing
 	pageLoaded = false;
 	
@@ -66,8 +66,8 @@ Slides can include elements which then can be animated using the Animator.
 	/*
 		Call animation functions when necessary.
 		*/
-	$[deck]('extend', 'manageAnimations', function(e, from, to) {
-		hasChanged = false;
+	function manageAnimations(e, from, to) {
+		slideChangeHappened = false;
 
 		/*
 		 * If the animations of the current slide are not complete,
@@ -89,7 +89,7 @@ Slides can include elements which then can be animated using the Animator.
 				animator.prev(true);
 			}
 		}
-	});
+	}
 	   
     /*
         jQuery.deck('Init')
@@ -104,13 +104,13 @@ Slides can include elements which then can be animated using the Animator.
         $d.unbind('keydown.deckanimator').bind('keydown.deckanimator', function(e) {
 			var currentIndex = $[deck]('getCurrentSlideIndex');
 			var nbSlides = $[deck]('getSlides').length;
-            if (currentIndex === nbSlides -1 && !hasChanged && (e.which === keys.next || $.inArray(e.which, keys.next) > -1)) {
-                $[deck]('manageAnimations', e, currentIndex, currentIndex);
+            if (currentIndex === nbSlides -1 && !slideChangeHappened && (e.which === keys.next || $.inArray(e.which, keys.next) > -1)) {
+                manageAnimations(e, currentIndex, currentIndex);
             }
-			if (currentIndex === 0 && !hasChanged && (e.which === keys.previous || $.inArray(e.which, keys.previous) > -1)) {
-                $[deck]('manageAnimations', e, currentIndex, currentIndex);
+			if (currentIndex === 0 && !slideChangeHappened && (e.which === keys.previous || $.inArray(e.which, keys.previous) > -1)) {
+                manageAnimations(e, currentIndex, currentIndex);
             }
-			hasChanged = false;
+			slideChangeHappened = false;
         });
 		
 		// if there is no anchor, deck.change won't be triggered and the page has finished loading
@@ -119,11 +119,11 @@ Slides can include elements which then can be animated using the Animator.
 		}
     })
 	.bind('deck.beforeChange', function(e, from, to) {
-		$[deck]('manageAnimations', e, from, to);
+		manageAnimations(e, from, to);
 	})
 	
 	.bind('deck.change', function(e, from, to) {
-		hasChanged = true;
+		slideChangeHappened = true;
 		// when the presentation hasn't been loaded from the first slide,
 		// the previous animations are set to their final states
 		if(!pageLoaded) {
