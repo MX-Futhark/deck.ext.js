@@ -1,3 +1,19 @@
+/**
+ * This class acts as a state machine to play and keep track of an ongoing 
+ * list of animations.
+ *
+ * The following vocabulary is used in the documentation: 
+ *   - action/animation: A animation unit, such as "move" or "appear",
+ *       applied to a single HTML element. More specifically, an animation is
+ *       an object containing an action and the function to play it. 
+ *       An action is a JSON description of an animation.
+ *   - sequence: A list of actions between two actions triggered by "onChange",
+ *       the first one be included but not the last one.
+ *       When next or prev is called, a sequence of actions is played.
+ *   - animator: This class or one of its instances, i.e. what keeps track of 
+ *       what actions will be played next depending on the next method called
+ *       by the user.
+ */
 function Animator(target, animations) {
 
     TriggerEnum = {
