@@ -83,26 +83,12 @@ https://github.com/imakewebthings/deck.js/blob/master/GPL-license.txt
     function autoplayNext(e) {
         var currentIndex = $[deck]('getCurrentSlideIndex');
         var animator = $[deck]('getAnimator', currentIndex);
-<<<<<<< HEAD
         manageAnimations(e, currentIndex, currentIndex+1);
         if(!hasAnimations(animator)) {
-=======
-        if(animator === undefined || animator.isCompleted()) {
->>>>>>> 10dbaa2... Add delay before auto-next when no animator detected in current slide
             $[deck]('next');
-            if($[deck]('getSlides').length > currentIndex+1) {
-                $[deck]('getSlide', currentIndex+1).delay(2000).queue(function(next){
-                    $[deck]('next');
-                    var newCurrentIndex = $[deck]('getCurrentSlideIndex');
-                    manageAnimations(e, newCurrentIndex, newCurrentIndex+1);
-                });
-            }
+            manageAnimations(e, currentIndex+1, currentIndex+2);
         } else {
-            manageAnimations(e, currentIndex, currentIndex+1);
-            if(animator !== undefined && animator.isCompleted()) {
-                $[deck]('next');
-                manageAnimations(e, currentIndex+1, currentIndex+2);
-            }
+            console.log('anims left');
         }
     }
     
@@ -192,24 +178,44 @@ https://github.com/imakewebthings/deck.js/blob/master/GPL-license.txt
         }
         pageLoaded = true;
         
+<<<<<<< HEAD
         if(autoplayEnabled) {
             // if the current slide has no animator / an empty animator, 
             // wait 2s before goind to the next slide
             var animator = $[deck]('getAnimator', from);
             if(!hasAnimations(animator)) {
                 $[deck]('getSlide', from).delay(2000).queue(function(next){
+=======
+        $[deck]('getSlide', to).clearQueue();
+        if(autoplayEnabled && from === to-1) {
+            console.log('autoplayEnabled');
+            // if the current slide has no animator / an empty animator, 
+            // wait 2s before goind to the next slide
+            var animator = $[deck]('getAnimator', to);
+            if(!hasAnimations(animator)) {
+                console.log("add delay to " + to);
+                $[deck]('getSlide', to).delay(2000).queue(function(next){
+                    console.log("callback");
+>>>>>>> ffe9db2... Fix animation autoplay for slides without an animator
                     // if autoplay is still enabled at the time the callback is called, 
                     // actually go to the next slide
                     if(autoplayEnabled) {
                         var newCurrentIndex = $[deck]('getCurrentSlideIndex');
+<<<<<<< HEAD
                         $[deck]('next');
                         manageAnimations(undefined, from, from+1);
+=======
+                        console.log("after delay" + newCurrentIndex);
+                        $[deck]('next');
+                        manageAnimations(undefined, newCurrentIndex+1, newCurrentIndex+2);
+>>>>>>> ffe9db2... Fix animation autoplay for slides without an animator
                     }
                 });
             }
         }
     })
     .bind('deck.animator.sequence.stop', function(e, options) {
+        console.log("sequence stop");
         if(autoplayEnabled) {
             autoplayNext(e);
         }
