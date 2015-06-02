@@ -83,10 +83,26 @@ https://github.com/imakewebthings/deck.js/blob/master/GPL-license.txt
     function autoplayNext(e) {
         var currentIndex = $[deck]('getCurrentSlideIndex');
         var animator = $[deck]('getAnimator', currentIndex);
+<<<<<<< HEAD
         manageAnimations(e, currentIndex, currentIndex+1);
         if(!hasAnimations(animator)) {
+=======
+        if(animator === undefined || animator.isCompleted()) {
+>>>>>>> 10dbaa2... Add delay before auto-next when no animator detected in current slide
             $[deck]('next');
-            manageAnimations(e, currentIndex+1, currentIndex+2);
+            if($[deck]('getSlides').length > currentIndex+1) {
+                $[deck]('getSlide', currentIndex+1).delay(2000).queue(function(next){
+                    $[deck]('next');
+                    var newCurrentIndex = $[deck]('getCurrentSlideIndex');
+                    manageAnimations(e, newCurrentIndex, newCurrentIndex+1);
+                });
+            }
+        } else {
+            manageAnimations(e, currentIndex, currentIndex+1);
+            if(animator !== undefined && animator.isCompleted()) {
+                $[deck]('next');
+                manageAnimations(e, currentIndex+1, currentIndex+2);
+            }
         }
     }
     
