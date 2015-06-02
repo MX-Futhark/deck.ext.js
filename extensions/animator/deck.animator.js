@@ -14,7 +14,10 @@ Slides can include elements which then can be animated using the Animator.
 
 (function($, deck, undefined) {
     var $d = $(document);
+	// determines whether a actuel change in slide number has occured before the next action
 	hasChanged = false;
+	// determines whether the animators have finished initializing
+	pageLoaded = false;
 	
 	$[deck]('extend', 'getCurrentSlideIndex', function() {
 		var current = $[deck]('getSlide');
@@ -25,9 +28,27 @@ Slides can include elements which then can be animated using the Animator.
 		return -1;
     });
 	
+	/*
+		Returns the animator of the slide.
+		*/
 	$[deck]('extend', 'getAnimator', function(slideNum) {
 		var $slide = $[deck]('getSlide', slideNum);
-		return eval($slide.data('dahu-animator'));
+		return $slide.data('slide-animator');
+	});
+	
+	$[deck]('extend', 'convertAnimatorJSON', function(animatorJSON) {
+		var animationsJSON = animatorJSON.actions;
+		animations = new Array();
+		animationsJSON.forEach( function(a){
+			if(a.type === "move") {
+				animations.push(Animator.Move(a.target, parseInt(a.trX), parseInt(a.trY), parseInt(a.duration)));
+			} else if (a.type === 'appear') {
+				animations.push(Animator.Appear(a.target, parseInt(a.duration)));
+			} else if (a.type === 'disappear') {
+				animations.push(Animator.Disappear(a.target, parseInt(a.duration)));
+			}
+		});
+		return new Animator(animatorJSON.target, animations)
 	});
 	   
     /*
@@ -35,17 +56,25 @@ Slides can include elements which then can be animated using the Animator.
         */
     $d.bind('deck.init', function() {
         var keys = $[deck].defaults.keys;
+		
+		// init all animators
+		for(slideNb = 0; slideNb < $[deck]('getSlides').length; ++slideNb) {
+			var $slide = $[deck]('getSlide', slideNb);
+			var animatorJSON = eval($slide.data('dahu-animator'));
+			
+			if(!animatorJSON) continue;
+			
+			$slide.data('slide-animator', $[deck]('convertAnimatorJSON', animatorJSON));
+		}
         
         /* Bind key events */
         $d.unbind('keydown.deckanimator').bind('keydown.deckanimator', function(e) {
 			var currentIndex = $[deck]('getCurrentSlideIndex');
 			var nbSlides = $[deck]('getSlides').length;
             if (currentIndex === nbSlides -1 && !hasChanged && (e.which === keys.next || $.inArray(e.which, keys.next) > -1)) {
-				console.log("next triggered");
                 $d.trigger('deck.beforeChange', [currentIndex, currentIndex]);
             }
 			if (currentIndex === 0 && !hasChanged && (e.which === keys.previous || $.inArray(e.which, keys.previous) > -1)) {
-				console.log("prev triggered");
                 $d.trigger('deck.beforeChange', [currentIndex, currentIndex]);
             }
 			hasChanged = false;
@@ -54,21 +83,13 @@ Slides can include elements which then can be animated using the Animator.
     
 	.bind('deck.beforeChange', function(e, from, to) {
 		hasChanged = false;
-		
-		console.log('from = ' + from)
-		console.log('to = ' + to)
+
 		/*
 		 * If the animations of the current slide are not complete,
 		 * we keep on doing them and we don't go to the next slide.
 		 */
 		var animator = $[deck]('getAnimator', from);
 		if ( animator !== undefined ) {
-			var toAnimator = $[deck]('getAnimator', to);
-			// on the case the animation hasn't yet been initialized
-			// for example, when the presentation hasn't been loaded from the first slide
-			if(from > to && !toAnimator.isCompleted()) {
-				toAnimator.startFromTheEnd();
-			}
 			if( (from === to-1 || (from === to && to === $[deck]('getSlides').length - 1)) && (! animator.isCompleted()) ) {
 				e.preventDefault();
 				if ( animator.getCursor() == 0 ) {
@@ -85,6 +106,17 @@ Slides can include elements which then can be animated using the Animator.
 	
 	.bind('deck.change', function(e, from, to) {
 		hasChanged = true;
+		// when the presentation hasn't been loaded from the first slide,
+		// the previous animations are set to their final states
+		if(!pageLoaded) {
+			for(slideNb = 0; slideNb < to; ++slideNb) {
+				var prevAnimator = $[deck]('getAnimator', slideNb);
+				if(prevAnimator !== undefined) {
+					prevAnimator.startFromTheEnd();
+				}
+			}
+		}
+		pageLoaded = true;
 	});
 	
 		

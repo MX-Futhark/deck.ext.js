@@ -60,7 +60,6 @@ function Animator(target, animations) {
 	this.startFromTheEnd = function() {
 		init();
 		animations.forEach( function(a){
-			console.log("skipping");
             a(target, false, true);
 			cursor++;
         });
@@ -132,7 +131,7 @@ function Animator(target, animations) {
 Animator.Appear = function(e, d) {
     d = d || 0;
     return function(t, reverse, skip) {
-		duration = d
+		duration = d;
 		if(skip) duration = 0;
 		if(reverse) {
 			$(e, t).animate({opacity: 0}, duration);
@@ -151,7 +150,7 @@ Animator.Appear = function(e, d) {
 Animator.Disappear = function(e, d) {
     d = d || 0;
     return function(t, reverse, skip) {
-		duration = d
+		duration = d;
 		if(skip) duration = 0;
 		if(reverse) {
 			$(e, t).animate({opacity: 1}, duration);
@@ -172,7 +171,7 @@ Animator.Disappear = function(e, d) {
 Animator.Move = function(e,trX,trY,d) {
     d = d || 0;
     return function(t, reverse, skip) {
-		duration = d
+		duration = d;
 		if(skip) duration = 0;
 		// You have to wait for the animation to be finished to avoid using the wrong starting coordinates
 		$(e).promise().done(function(){
