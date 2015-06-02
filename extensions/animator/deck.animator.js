@@ -79,21 +79,10 @@ https://github.com/imakewebthings/deck.js/blob/master/GPL-license.txt
     function autoplayNext(e) {
         var currentIndex = $[deck]('getCurrentSlideIndex');
         var animator = $[deck]('getAnimator', currentIndex);
-        if(animator === undefined || animator.isCompleted()) {
+        manageAnimations(e, currentIndex, currentIndex+1);
+        if(animator !== undefined && animator.isCompleted()) {
             $[deck]('next');
-            if($[deck]('getSlides').length > currentIndex+1) {
-                $[deck]('getSlide', currentIndex+1).delay(2000).queue(function(next){
-                    $[deck]('next');
-                    var newCurrentIndex = $[deck]('getCurrentSlideIndex');
-                    manageAnimations(e, newCurrentIndex, newCurrentIndex+1);
-                });
-            }
-        } else {
-            manageAnimations(e, currentIndex, currentIndex+1);
-            if(animator !== undefined && animator.isCompleted()) {
-                $[deck]('next');
-                manageAnimations(e, currentIndex+1, currentIndex+2);
-            }
+            manageAnimations(e, currentIndex+1, currentIndex+2);
         }
     }
     
@@ -182,6 +171,24 @@ https://github.com/imakewebthings/deck.js/blob/master/GPL-license.txt
             }
         }
         pageLoaded = true;
+        
+        if(autoplayEnabled) {
+            // if the current slide has no animator / an empty animator, 
+            // wait 2s before goind to the next slide
+            var animator = $[deck]('getAnimator', from);
+            if(animator === undefined || animator.isCompleted()) {
+                $[deck]('getSlide', from).delay(2000).queue(function(next){
+                    // if autoplay is still enabled at the time the callback is called, 
+                    // actually go to the next slide
+                    if(autoplayEnabled) {
+                        var newCurrentIndex = $[deck]('getCurrentSlideIndex');
+                        console.log("autoplay " + from);
+                        $[deck]('next');
+                        manageAnimations(undefined, from, from+1);
+                    }
+                });
+            }
+        }
     })
     .bind('deck.animator.sequence.stop', function(e, options) {
         if(autoplayEnabled) {
