@@ -22,6 +22,10 @@ https://github.com/imakewebthings/deck.js/blob/master/GPL-license.txt
     // determine whether the slides play automtically
     autoplayEnabled = false;
     
+    function hasAnimations(animator) {
+        return !(animator === undefined || animator.isCompleted());
+    }
+    
     $.extend(true, $[deck].defaults, {
         keys: {
             autoplay: 65 // a
@@ -79,21 +83,12 @@ https://github.com/imakewebthings/deck.js/blob/master/GPL-license.txt
     function autoplayNext(e) {
         var currentIndex = $[deck]('getCurrentSlideIndex');
         var animator = $[deck]('getAnimator', currentIndex);
-        if(animator === undefined || animator.isCompleted()) {
+        manageAnimations(e, currentIndex, currentIndex+1);
+        if(!hasAnimations(animator)) {
             $[deck]('next');
-            if($[deck]('getSlides').length > currentIndex+1) {
-                $[deck]('getSlide', currentIndex+1).delay(2000).queue(function(next){
-                    $[deck]('next');
-                    var newCurrentIndex = $[deck]('getCurrentSlideIndex');
-                    manageAnimations(e, newCurrentIndex, newCurrentIndex+1);
-                });
-            }
+            manageAnimations(e, currentIndex+1, currentIndex+2);
         } else {
-            manageAnimations(e, currentIndex, currentIndex+1);
-            if(animator !== undefined && animator.isCompleted()) {
-                $[deck]('next');
-                manageAnimations(e, currentIndex+1, currentIndex+2);
-            }
+            console.log('anims left');
         }
     }
     
@@ -106,7 +101,7 @@ https://github.com/imakewebthings/deck.js/blob/master/GPL-license.txt
         // If the animations of the current slide are not complete,
         // we keep on doing them and we don't go to the next slide.
         var animator = $[deck]('getAnimator', from);
-        if ( animator !== undefined && pageLoaded) {
+        if (animator !== undefined && pageLoaded) {
             // ->
             if( (from === to-1 || (from === to && to === $[deck]('getSlides').length - 1)) && (! animator.isCompleted()) ) {
                 // the function has been called from beforeChange
@@ -176,14 +171,37 @@ https://github.com/imakewebthings/deck.js/blob/master/GPL-license.txt
         if(!pageLoaded) {
             for(slideNb = 0; slideNb < to; ++slideNb) {
                 var prevAnimator = $[deck]('getAnimator', slideNb);
-                if(prevAnimator !== undefined) {
+                if(hasAnimations(prevAnimator)) {
                     prevAnimator.startFromTheEnd();
                 }
             }
         }
         pageLoaded = true;
+        
+        $[deck]('getSlide', to).clearQueue();
+        if(autoplayEnabled && from === to-1) {
+            console.log('autoplayEnabled');
+            // if the current slide has no animator / an empty animator, 
+            // wait 2s before goind to the next slide
+            var animator = $[deck]('getAnimator', to);
+            if(!hasAnimations(animator)) {
+                console.log("add delay to " + to);
+                $[deck]('getSlide', to).delay(2000).queue(function(next){
+                    console.log("callback");
+                    // if autoplay is still enabled at the time the callback is called, 
+                    // actually go to the next slide
+                    if(autoplayEnabled) {
+                        var newCurrentIndex = $[deck]('getCurrentSlideIndex');
+                        console.log("after delay" + newCurrentIndex);
+                        $[deck]('next');
+                        manageAnimations(undefined, newCurrentIndex+1, newCurrentIndex+2);
+                    }
+                });
+            }
+        }
     })
     .bind('deck.animator.sequence.stop', function(e, options) {
+        console.log("sequence stop");
         if(autoplayEnabled) {
             autoplayNext(e);
         }
