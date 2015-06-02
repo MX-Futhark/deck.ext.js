@@ -73,15 +73,29 @@ https://github.com/imakewebthings/deck.js/blob/master/GPL-license.txt
         }
     });
     
-    $[deck]('extend', 'autoplayNext', function(e) {
+    /**
+     * Automatically plays the next step of the presentation
+     */
+    function autoplayNext(e) {
         var currentIndex = $[deck]('getCurrentSlideIndex');
         var animator = $[deck]('getAnimator', currentIndex);
-        manageAnimations(e, currentIndex, currentIndex+1);
-        if(animator !== undefined && animator.isCompleted()) {
+        if(animator === undefined || animator.isCompleted()) {
             $[deck]('next');
-            manageAnimations(e, currentIndex+1, currentIndex+2);
+            if($[deck]('getSlides').length > currentIndex+1) {
+                $[deck]('getSlide', currentIndex+1).delay(2000).queue(function(next){
+                    $[deck]('next');
+                    var newCurrentIndex = $[deck]('getCurrentSlideIndex');
+                    manageAnimations(e, newCurrentIndex, newCurrentIndex+1);
+                });
+            }
+        } else {
+            manageAnimations(e, currentIndex, currentIndex+1);
+            if(animator !== undefined && animator.isCompleted()) {
+                $[deck]('next');
+                manageAnimations(e, currentIndex+1, currentIndex+2);
+            }
         }
-    });
+    }
     
     /**
      * Call animation functions when necessary.
@@ -130,7 +144,7 @@ https://github.com/imakewebthings/deck.js/blob/master/GPL-license.txt
             if(e.which === keys.autoplay) {
                 if(!autoplayEnabled) {
                     autoplayEnabled = true;
-                    $[deck]('autoplayNext');
+                    autoplayNext();
                 } else {
                     autoplayEnabled = false;
                 }
@@ -171,7 +185,7 @@ https://github.com/imakewebthings/deck.js/blob/master/GPL-license.txt
     })
     .bind('deck.animator.sequence.stop', function(e, options) {
         if(autoplayEnabled) {
-            $[deck]('autoplayNext', e);
+            autoplayNext(e);
         }
     });
     
