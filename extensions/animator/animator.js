@@ -129,6 +129,13 @@ function Animator(target, animations) {
     }
     
     /**
+     * Return true if the animation should start playing immediatly
+     */
+    this.hasImmediateStart = function() {
+        return anims[0].action.trigger !== TriggerEnum.ONCHANGE;
+    }
+    
+    /**
      * Return true if the animation is ongoing
      */
     this.isOngoing = function() {
@@ -213,12 +220,13 @@ function Animator(target, animations) {
     /**
      * Add a callback to animationSequence[i].
      */
-    function queueAnimation(animator, animationSequence, i, reverse, skip) {
+    function queueAnimation(animator, animationSequence, i, reverse, skip, isFirst) {
         animationSequence[i].action.nextPlay = function() {
             $(document).trigger(events.actionStop, {'target':target, 'id':animationSequence[i].action.id, 'reverse':reverse});
             if(i < animationSequence.length - 1 &&
                     (animationSequence[i].action.trigger === TriggerEnum.ONCHANGE 
-                        || animationSequence[i+1].action.trigger === TriggerEnum.AFTERPREVIOUS)) {
+                        || animationSequence[i+1].action.trigger === TriggerEnum.AFTERPREVIOUS
+                        || isFirst)) {
                 playAnimation(animationSequence[i+1], reverse, skip);
                 for(j = i+2; j < animationSequence.length ; ++j) {
                     if(animationSequence[j].action.trigger === TriggerEnum.WITHPREVIOUS) {
@@ -253,7 +261,7 @@ function Animator(target, animations) {
             });
         } else {
             for(i = 0; i < animationSequence.length; ++i) {
-                queueAnimation(animator, animationSequence, i, reverse, skip);
+                queueAnimation(animator, animationSequence, i, reverse, skip, i===0);
             }
             playAnimation(animationSequence[0], reverse, skip);
         }
