@@ -192,7 +192,7 @@ https://github.com/imakewebthings/deck.js/blob/master/GPL-license.txt
         $[deck]('getSlide', to).clearQueue();
         if(autoplayEnabled && from === to-1) {
             // if the current slide has no animator / an empty animator, 
-            // wait 2s before goind to the next slide
+            // wait 2s before going to the next slide
             if(!hasAnimations(animator)) {
                 $[deck]('getSlide', to).delay(2000).queue(function(next){
                     // if autoplay is still enabled at the time the callback is called, 

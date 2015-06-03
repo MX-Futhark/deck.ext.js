@@ -220,13 +220,11 @@ function Animator(target, animations) {
     /**
      * Add a callback to animationSequence[i].
      */
-    function queueAnimation(animator, animationSequence, i, reverse, skip, isFirst) {
+    function queueAnimation(animator, animationSequence, i, reverse, skip) {
         animationSequence[i].action.nextPlay = function() {
             $(document).trigger(events.actionStop, {'target':target, 'id':animationSequence[i].action.id, 'reverse':reverse});
             if(i < animationSequence.length - 1 &&
-                    (animationSequence[i].action.trigger === TriggerEnum.ONCHANGE 
-                        || animationSequence[i+1].action.trigger === TriggerEnum.AFTERPREVIOUS
-                        || isFirst)) {
+                    animationSequence[i+1].action.trigger === TriggerEnum.AFTERPREVIOUS) {
                 playAnimation(animationSequence[i+1], reverse, skip);
                 for(j = i+2; j < animationSequence.length ; ++j) {
                     if(animationSequence[j].action.trigger === TriggerEnum.WITHPREVIOUS) {
@@ -235,7 +233,7 @@ function Animator(target, animations) {
                 }
             }
             
-            if(!animator.isOngoing()) {
+            if(animationSequence[i].action.last) {
                 $(document).trigger(events.sequenceStop, {'target':target, 'id':animationSequence[i].action.id, 'reverse':reverse});
             }
         };
@@ -260,10 +258,32 @@ function Animator(target, animations) {
                 playAnimation(a, reverse, skip);
             });
         } else {
+            var endDate = 0;
+            var maxEndDate = 0;
+            // save the end time of every action to avoid triggered sequenceStop more than once
             for(i = 0; i < animationSequence.length; ++i) {
-                queueAnimation(animator, animationSequence, i, reverse, skip, i===0);
+                animationSequence[i].action.end = animationSequence[i].action.duration + endDate;
+                if(animationSequence[i].action.trigger !== TriggerEnum.WITHPREVIOUS) {
+                    endDate = animationSequence[i].action.end;
+                }
+                if(animationSequence[i].action.end > maxEndDate) {
+                    maxEndDate = animationSequence[i].action.end;
+                }
             }
-            playAnimation(animationSequence[0], reverse, skip);
+            for(i = animationSequence.length - 1; i >= 0; --i) {
+                if(animationSequence[i].action.end === maxEndDate) {
+                    animationSequence[i].action.last = true;
+                    break;
+                }
+            }
+            for(i = 0; i < animationSequence.length; ++i) {
+                queueAnimation(animator, animationSequence, i, reverse, skip);
+            }
+            i = 0;
+            while(i < animationSequence.length && (animationSequence[i].action.trigger !== TriggerEnum.AFTERPREVIOUS || i===0)) {
+                playAnimation(animationSequence[i], reverse, skip);
+                ++i;
+            }
         }
     }
     
