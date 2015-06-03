@@ -152,13 +152,17 @@ https://github.com/imakewebthings/deck.js/blob/master/GPL-license.txt
                     autoplayEnabled = false;
                 }
             } else {
-                if (currentIndex === nbSlides -1 && !slideChangeHappened && (e.which === keys.next || $.inArray(e.which, keys.next) > -1)) {
+                if(e.which === keys.next || $.inArray(e.which, keys.next) > -1) {
                     autoplayEnabled = false;
-                    manageAnimations(undefined, currentIndex, currentIndex);
+                    if (currentIndex === nbSlides -1 && !slideChangeHappened) {
+                        manageAnimations(undefined, currentIndex, currentIndex);
+                    }
                 }
-                if (currentIndex === 0 && !slideChangeHappened && (e.which === keys.previous || $.inArray(e.which, keys.previous) > -1)) {
+                if(e.which === keys.previous || $.inArray(e.which, keys.previous) > -1) {
                     autoplayEnabled = false;
-                    manageAnimations(undefined, currentIndex, currentIndex);
+                    if (currentIndex === 0 && !slideChangeHappened) {
+                        manageAnimations(undefined, currentIndex, currentIndex);
+                    }
                 }
                 slideChangeHappened = false;
             }
