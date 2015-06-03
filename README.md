@@ -139,7 +139,6 @@ The slide is linked to its animator thanks to the value of its custom attribute 
 The JSON description of an animation follows the following format: 
 
         {
-          "id": A chain to identify the JSON object,
           "target": A CSS selector for the slides in which the animation occurs,
           "actions": [
             {
@@ -165,7 +164,6 @@ The following example makes the text disappear, then move and reappear as it mov
             </div>
             <script type="text/javascript">
                 var animDescription = {
-                    "id": "animator1",
                     "target": "#containing_slide",
                     "actions": [
                         {
