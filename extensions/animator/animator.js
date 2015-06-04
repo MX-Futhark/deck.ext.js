@@ -22,8 +22,10 @@ function Animator(target, animations) {
         AFTERPREVIOUS: "afterPrevious"
     }
     
-    var anims,  // list of all animations
-    cursor,     // pointer to the current animation
+    var anims,  // list of all actions
+    sequences,  // list of all sequences
+    cursor,     // pointer to the current action
+    seqCursor   // pointer to the current sequence
     
     events = {
         /**
@@ -111,6 +113,7 @@ function Animator(target, animations) {
             playAnimation(a, false, true);
             cursor++;
         });
+        seqCursor = sequences.length;
         $(document).trigger(events.completed, {'target':target, 'reverse':true});
     }
     
@@ -159,20 +162,13 @@ function Animator(target, animations) {
         }
         // else, do the actual next stuff
         if( cursor < anims.length ) {
-            var animationSequence = new Array();
+            var animationSequence = sequences[seqCursor++];
             $(document).trigger(events.sequenceStart, {
                 'target':target, 
                 'id':animations[cursor].action.id, 
                 'reverse':false
             });
-            do {
-                anim = animations[cursor++];
-                animationSequence.push(anim);
-                
-                if(cursor < anims.length && animations[cursor].action.trigger === TriggerEnum.ONCHANGE) {
-                    break;
-                }
-            } while(cursor < anims.length);
+            cursor += animationSequence.length;
             playSequence(this, animationSequence, false, false);
             if(cursor === anims.length) {
                 $(document).trigger(events.completed, {'target':target, 'reverse':false});
@@ -192,25 +188,26 @@ function Animator(target, animations) {
                 this.finishOngoing();
                 return;
             }
-
-            var animationSequence = new Array();
+            // reverse the sequence
+            var animationSequence = (function(){
+                seq = sequences[--seqCursor];
+                revSeq = new Array();
+                seq.forEach(function(a){
+                    revSeq.unshift(a);
+                });
+                return revSeq;
+            })();
+            
             $(document).trigger(events.sequenceStart, {
                 'target':target, 
-                'index':animations[cursor-1].action.id, 
+                'id':animations[cursor-1].action.id, 
                 'reverse':true
             });
-            do {
-                anim = animations[--cursor];
-                animationSequence.push(anim);
-                
-                if(cursor > 0 && animations[cursor].action.trigger === TriggerEnum.ONCHANGE) {
-                    break;
-                }
-            } while(cursor > 0);
+            cursor -= animationSequence.length;
+            playSequence(this, animationSequence, true, true);
             if(cursor === 0) {
                 $(document).trigger(events.completed, {'target':target, 'reverse':true});
             }
-            playSequence(this, animationSequence, true, true);
         } else {
             $(document).trigger(events.completed, {'target':target, 'reverse':true});
         }
