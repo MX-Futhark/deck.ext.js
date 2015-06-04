@@ -281,21 +281,7 @@ function Animator(target, animations) {
             var endDate = 0;
             var maxEndDate = 0;
             // save the end time of every action to avoid triggered sequenceStop more than once
-            for(i = 0; i < animationSequence.length; ++i) {
-                animationSequence[i].action.end = animationSequence[i].action.duration + endDate;
-                if(animationSequence[i].action.trigger !== TriggerEnum.WITHPREVIOUS) {
-                    endDate = animationSequence[i].action.end;
-                }
-                if(animationSequence[i].action.end > maxEndDate) {
-                    maxEndDate = animationSequence[i].action.end;
-                }
-            }
-            for(i = animationSequence.length - 1; i >= 0; --i) {
-                if(animationSequence[i].action.end === maxEndDate) {
-                    animationSequence[i].action.last = true;
-                    break;
-                }
-            }
+
             for(i = 0; i < animationSequence.length; ++i) {
                 queueAnimation(animator, animationSequence, i, reverse, skip);
             }
@@ -307,17 +293,70 @@ function Animator(target, animations) {
         }
     }
     
+    /**
+     * Determine the last action of every sequence
+     * to avoid triggering sequenceStop more than once
+     */
+    function determineLastAction(animationSequence) {
+        var endDate = 0;
+        var maxEndDate = 0;
+        // Compute the end time of an action...
+        for(i = 0; i < animationSequence.length; ++i) {
+            animationSequence[i].action.end = animationSequence[i].action.duration + endDate;
+            if(animationSequence[i].action.trigger !== TriggerEnum.WITHPREVIOUS) {
+                endDate = animationSequence[i].action.end;
+            }
+            if(animationSequence[i].action.end > maxEndDate) {
+                maxEndDate = animationSequence[i].action.end;
+            }
+        }
+        // ...and use it to determine if it is the last one.
+        // If more than one actions end at the same time, 
+        // the last one in the list will trigger the sequenceStop event
+        for(i = animationSequence.length - 1; i >= 0; --i) {
+            if(animationSequence[i].action.end === maxEndDate) {
+                animationSequence[i].action.last = true;
+                break;
+            }
+        }
+    }
+    
+    /**
+     * Create the array of sequences 
+     */
+    function loadSequences() {
+        var index = 0;
+        sequences = new Array();
+        // create a sequence, from one onChange-triggered action to the next
+        while(index < animations.length) {
+            var animationSequence = new Array();
+            do {
+                anim = animations[index++];
+                animationSequence.push(anim);
+                
+                if(index < anims.length && animations[index].action.trigger === TriggerEnum.ONCHANGE) {
+                    break;
+                }
+            } while(index < anims.length);
+            determineLastAction(animationSequence);
+            sequences.push(animationSequence);
+        }
+    }
+    
     function init() {           
         $(document).trigger(events.beforeInitialize, {'target':target});
         
         cursor = 0;
+        seqCursor = 0;
         if( anims.length>0 ) {
             anim = animations[cursor];
+            loadSequences();
             $(document).trigger(events.initialize, {'target':target}); 
         } else {
             throw "Animator requires at least one animation."
         }
     }
+
 }
 
 /*#########################################################
