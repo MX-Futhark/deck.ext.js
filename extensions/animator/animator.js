@@ -113,6 +113,7 @@ function Animator(target, animations) {
             playAnimation(a, false, true);
             cursor++;
         });
+        seqCursor = sequences.length;
         $(document).trigger(events.completed, {'target':target, 'reverse':true});
     }
     
