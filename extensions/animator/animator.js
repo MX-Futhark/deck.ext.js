@@ -22,8 +22,10 @@ function Animator(target, animations) {
         AFTERPREVIOUS: "afterPrevious"
     }
     
-    var anims,  // list of all animations
-    cursor,     // pointer to the current animation
+    var anims,  // list of all actions
+    sequences,  // list of all sequences
+    cursor,     // pointer to the current action
+    seqCursor   // pointer to the current sequence
     
     events = {
         /**
@@ -111,6 +113,7 @@ function Animator(target, animations) {
             playAnimation(a, false, true);
             cursor++;
         });
+        seqCursor = sequences.length;
         $(document).trigger(events.completed, {'target':target, 'reverse':true});
     }
     
@@ -159,20 +162,13 @@ function Animator(target, animations) {
         }
         // else, do the actual next stuff
         if( cursor < anims.length ) {
-            var animationSequence = new Array();
+            var animationSequence = sequences[seqCursor++];
             $(document).trigger(events.sequenceStart, {
                 'target':target, 
                 'id':animations[cursor].action.id, 
                 'reverse':false
             });
-            do {
-                anim = animations[cursor++];
-                animationSequence.push(anim);
-                
-                if(cursor < anims.length && animations[cursor].action.trigger === TriggerEnum.ONCHANGE) {
-                    break;
-                }
-            } while(cursor < anims.length);
+            cursor += animationSequence.length;
             playSequence(this, animationSequence, false, false);
             if(cursor === anims.length) {
                 $(document).trigger(events.completed, {'target':target, 'reverse':false});
@@ -192,25 +188,19 @@ function Animator(target, animations) {
                 this.finishOngoing();
                 return;
             }
-
-            var animationSequence = new Array();
+            // the sequence is reversed in playSequence, not here
+            var animationSequence = sequences[--seqCursor];
+            
             $(document).trigger(events.sequenceStart, {
                 'target':target, 
-                'index':animations[cursor-1].action.id, 
+                'id':animations[cursor-1].action.id, 
                 'reverse':true
             });
-            do {
-                anim = animations[--cursor];
-                animationSequence.push(anim);
-                
-                if(cursor > 0 && animations[cursor].action.trigger === TriggerEnum.ONCHANGE) {
-                    break;
-                }
-            } while(cursor > 0);
+            cursor -= animationSequence.length;
+            playSequence(this, animationSequence, true, true);
             if(cursor === 0) {
                 $(document).trigger(events.completed, {'target':target, 'reverse':true});
             }
-            playSequence(this, animationSequence, true, true);
         } else {
             $(document).trigger(events.completed, {'target':target, 'reverse':true});
         }
@@ -274,28 +264,14 @@ function Animator(target, animations) {
         if(animationSequence.length === 0) return;
         
         if(reverse) {
-            animationSequence.forEach(function(a){
-                playAnimation(a, reverse, skip);
-            });
+            for(i = animationSequence.length-1; i >=0 ; --i) {
+                playAnimation(animationSequence[i], reverse, skip);
+            }
         } else {
             var endDate = 0;
             var maxEndDate = 0;
             // save the end time of every action to avoid triggered sequenceStop more than once
-            for(i = 0; i < animationSequence.length; ++i) {
-                animationSequence[i].action.end = animationSequence[i].action.duration + endDate;
-                if(animationSequence[i].action.trigger !== TriggerEnum.WITHPREVIOUS) {
-                    endDate = animationSequence[i].action.end;
-                }
-                if(animationSequence[i].action.end > maxEndDate) {
-                    maxEndDate = animationSequence[i].action.end;
-                }
-            }
-            for(i = animationSequence.length - 1; i >= 0; --i) {
-                if(animationSequence[i].action.end === maxEndDate) {
-                    animationSequence[i].action.last = true;
-                    break;
-                }
-            }
+
             for(i = 0; i < animationSequence.length; ++i) {
                 queueAnimation(animator, animationSequence, i, reverse, skip);
             }
@@ -307,17 +283,70 @@ function Animator(target, animations) {
         }
     }
     
+    /**
+     * Determine the last action of every sequence
+     * to avoid triggering sequenceStop more than once
+     */
+    function determineLastAction(animationSequence) {
+        var endDate = 0;
+        var maxEndDate = 0;
+        // Compute the end time of an action...
+        for(i = 0; i < animationSequence.length; ++i) {
+            animationSequence[i].action.end = animationSequence[i].action.duration + endDate;
+            if(animationSequence[i].action.trigger !== TriggerEnum.WITHPREVIOUS) {
+                endDate = animationSequence[i].action.end;
+            }
+            if(animationSequence[i].action.end > maxEndDate) {
+                maxEndDate = animationSequence[i].action.end;
+            }
+        }
+        // ...and use it to determine if it is the last one.
+        // If more than one actions end at the same time, 
+        // the last one in the list will trigger the sequenceStop event
+        for(i = animationSequence.length - 1; i >= 0; --i) {
+            if(animationSequence[i].action.end === maxEndDate) {
+                animationSequence[i].action.last = true;
+                break;
+            }
+        }
+    }
+    
+    /**
+     * Create the array of sequences 
+     */
+    function loadSequences() {
+        var index = 0;
+        sequences = new Array();
+        // create a sequence, from one onChange-triggered action to the next
+        while(index < animations.length) {
+            var animationSequence = new Array();
+            do {
+                anim = animations[index++];
+                animationSequence.push(anim);
+                
+                if(index < anims.length && animations[index].action.trigger === TriggerEnum.ONCHANGE) {
+                    break;
+                }
+            } while(index < anims.length);
+            determineLastAction(animationSequence);
+            sequences.push(animationSequence);
+        }
+    }
+    
     function init() {           
         $(document).trigger(events.beforeInitialize, {'target':target});
         
         cursor = 0;
+        seqCursor = 0;
         if( anims.length>0 ) {
             anim = animations[cursor];
+            loadSequences();
             $(document).trigger(events.initialize, {'target':target}); 
         } else {
             throw "Animator requires at least one animation."
         }
     }
+
 }
 
 /*#########################################################
