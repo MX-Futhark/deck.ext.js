@@ -188,15 +188,8 @@ function Animator(target, animations) {
                 this.finishOngoing();
                 return;
             }
-            // reverse the sequence
-            var animationSequence = (function(){
-                seq = sequences[--seqCursor];
-                revSeq = new Array();
-                seq.forEach(function(a){
-                    revSeq.unshift(a);
-                });
-                return revSeq;
-            })();
+            // the sequence is reversed in playSequence, not here
+            var animationSequence = sequences[--seqCursor];
             
             $(document).trigger(events.sequenceStart, {
                 'target':target, 
@@ -271,9 +264,9 @@ function Animator(target, animations) {
         if(animationSequence.length === 0) return;
         
         if(reverse) {
-            animationSequence.forEach(function(a){
-                playAnimation(a, reverse, skip);
-            });
+            for(i = animationSequence.length-1; i >=0 ; --i) {
+                playAnimation(animationSequence[i], reverse, skip);
+            }
         } else {
             var endDate = 0;
             var maxEndDate = 0;
