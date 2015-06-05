@@ -204,12 +204,12 @@ https://github.com/imakewebthings/deck.js/blob/master/GPL-license.txt
                     if(autoplayEnabled) {
                         var newCurrentIndex = $[deck]('getCurrentSlideIndex');
                         $[deck]('next');
-                        manageAnimations(undefined, from, from+1);
+                        manageAnimations(undefined, newCurrentIndex+1, newCurrentIndex+2);
                     }
                 });
             }
         }
-
+        
         if(!autoplayEnabled) {
             verifyImmediateStart(animator, to);
         }
@@ -222,4 +222,3 @@ https://github.com/imakewebthings/deck.js/blob/master/GPL-license.txt
     
         
 })(jQuery, 'deck');
-
