@@ -386,8 +386,8 @@ Animator.Disappear = function(a) {
  */
 Animator.Move = function(a) {
     return generateAnimatedAction(a, function(t, reverse, skip) {
-        currentX = parseInt($(a.target).css("left"));
-        currentY = parseInt($(a.target).css("top"));
+        currentX = parseInt($(a.target, t).css("left"));
+        currentY = parseInt($(a.target, t).css("top"));
         trX = parseInt(a.trX);
         trY = parseInt(a.trY);
         playReversibleAnimation(a, t, 
