@@ -93,10 +93,11 @@ https://github.com/imakewebthings/deck.js/blob/master/GPL-license.txt
     function autoplayNext(e) {
         var currentIndex = $[deck]('getCurrentSlideIndex');
         var animator = $[deck]('getAnimator', currentIndex);
-        manageAnimations(e, currentIndex, currentIndex+1);
         if(!hasAnimations(animator)) {
             $[deck]('next');
-            manageAnimations(e, currentIndex+1, currentIndex+2);
+            //manageAnimations(e, currentIndex+1, currentIndex+2);
+        } else if (!animator.isOngoing()) {
+            manageAnimations(e, currentIndex, currentIndex+1);
         }
     }
     
@@ -202,11 +203,11 @@ https://github.com/imakewebthings/deck.js/blob/master/GPL-license.txt
                     // if autoplay is still enabled at the time the callback is called, 
                     // actually go to the next slide
                     if(autoplayEnabled) {
-                        var newCurrentIndex = $[deck]('getCurrentSlideIndex');
                         $[deck]('next');
-                        manageAnimations(undefined, newCurrentIndex+1, newCurrentIndex+2);
                     }
                 });
+            } else {
+                manageAnimations(undefined, to, to+1);
             }
         }
         
